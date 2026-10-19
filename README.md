@@ -6,6 +6,15 @@ filtering + produce/location preference in a tunable hybrid model.
 ## Stack
 Django + DRF · Surprise · scikit-learn · pandas/numpy · SQLite (MySQL-portable) · HTML/CSS/JS + Chart.js
 
+## Where the ML code lives
+The machine-learning engine lives in this repository under `ml/` (preprocessing,
+recommendation, training, and the FAO/synthetic datasets). It is kept here, not
+in the separate `ucs35-Aira-ML` repository, because the Django app imports it
+directly at runtime (e.g. `from ml.recommendation.hybrid import recommend_for_buyer`)
+and the two are trained and served together. The `ucs35-Aira-ML` repository is a
+placeholder; its README should point here. The engine itself is Django-independent
+and can be run on its own (`python -m ml.recommendation.hybrid`).
+
 ## Quick start
 Requires **Python 3.11–3.13** (tested on 3.11 and 3.13; dependency versions are pinned in
 `requirements.txt`). No environment variables are needed for local development — see
