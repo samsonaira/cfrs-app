@@ -175,7 +175,7 @@ def start_transaction(request, pk):
         tx = create_transaction(request.user, pk, qty)
         messages.success(request,
             f"Request sent: {tx.quantity} {tx.listing.unit} of "
-            f"{tx.listing.produce_name}. Total KSh {tx.total_amount}. "
+            f"{tx.listing.produce_name}. Total KSh {tx.total_amount:.2f}. "
             "Waiting for the farmer to confirm.")
         return redirect("dashboard")
     except TransactionError as e:
@@ -309,10 +309,15 @@ def _flag_transactions(limit=100):
         produce = t.listing.produce_name if t.listing else ""
         m = med.get(produce, float(t.agreed_price) or 1)
         dev = abs(float(t.agreed_price) - m) / (m or 1)
-        is_anom, score = score_transaction(
-            amount=float(t.total_amount), quantity=float(t.quantity),
-            price=float(t.agreed_price), price_deviation=dev,
-            buyer_freq=buyer_freq[t.buyer_id])
+        try:
+            is_anom, score = score_transaction(
+                amount=float(t.total_amount), quantity=float(t.quantity),
+                price=float(t.agreed_price), price_deviation=dev,
+                buyer_freq=buyer_freq[t.buyer_id])
+        except FileNotFoundError:
+            # Model not trained yet — show the dashboard without fraud review
+            # rather than a 500. Run `python manage.py train_recommender`.
+            return []
         if is_anom:
             flagged.append({
                 "id": t.id,

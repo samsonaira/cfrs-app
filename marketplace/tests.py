@@ -281,3 +281,47 @@ class DemoCredentialsTests(TestCase):
                             .check_password("env-set-admin-pw-123"))
         finally:
             del os.environ["CFRS_ADMIN_PASSWORD"]
+
+
+class AdminDashboardResilienceTests(TestCase):
+    """Item 9a: dashboard must not 500 when fraud_model.pkl is untrained."""
+
+    def test_dashboard_200_when_fraud_model_untrained(self):
+        from unittest.mock import patch
+        from django.urls import reverse
+        farmer = Account.objects.create_user(
+            username="f9@t.ke", email="f9@t.ke", password="x", role="FARMER")
+        buyer = Account.objects.create_user(
+            username="b9@t.ke", email="b9@t.ke", password="x", role="BUYER")
+        listing = ProduceListing.objects.create(
+            farmer=farmer, produce_name="Maize", quantity=100,
+            asking_price=45, location="Kiambu", status="ACTIVE")
+        create_transaction(buyer, listing.pk, 5)
+        admin = Account.objects.create_user(
+            username="a9@t.ke", email="a9@t.ke", password="x", role="ADMINISTRATOR")
+        c = Client(); c.force_login(admin)
+        with patch("ml.recommendation.fraud_detection.score_transaction",
+                   side_effect=FileNotFoundError):
+            resp = c.get(reverse("admin_dashboard"))
+        self.assertEqual(resp.status_code, 200)
+
+
+class RequestMessageRoundingTests(TestCase):
+    """Item 9b: the 'Request sent' total is shown rounded to 2 dp."""
+
+    def test_total_rounded_to_two_dp(self):
+        import re
+        from django.urls import reverse
+        farmer = Account.objects.create_user(
+            username="f10@t.ke", email="f10@t.ke", password="x", role="FARMER")
+        buyer = Account.objects.create_user(
+            username="b10@t.ke", email="b10@t.ke", password="x", role="BUYER")
+        listing = ProduceListing.objects.create(
+            farmer=farmer, produce_name="Maize", quantity=Decimal("100"),
+            asking_price=Decimal("45.15"), location="Kiambu", status="ACTIVE")
+        c = Client(); c.force_login(buyer)
+        resp = c.post(reverse("start_transaction", args=[listing.pk]),
+                      {"quantity": "0.10"}, follow=True)
+        msgs = " ".join(str(m) for m in list(resp.context["messages"]))
+        self.assertIn("Total KSh", msgs)
+        self.assertNotRegex(msgs, r"KSh \d+\.\d{3,}")  # never 3+ decimal places
