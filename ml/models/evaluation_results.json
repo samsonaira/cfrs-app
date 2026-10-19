@@ -2,10 +2,10 @@
   "dataset": {
     "n_buyers": 200,
     "n_farmers": 500,
-    "n_interactions": 5155,
+    "n_interactions": 5159,
     "matrix_cells": 100000,
-    "density": 0.05155,
-    "sparsity": 0.94845
+    "density": 0.05159,
+    "sparsity": 0.94841
   },
   "hybrid_weights": {
     "cf": 0.4,
@@ -15,27 +15,27 @@
   "models": [
     {
       "model": "Popularity Baseline",
-      "rmse": 0.7389,
-      "mae": 0.5883,
-      "precision_at_5": 0.3483,
-      "recall_at_5": 0.6885,
-      "f1_at_5": 0.4626
+      "rmse": 0.8259,
+      "mae": 0.6518,
+      "precision_at_5": 0.3389,
+      "recall_at_5": 0.6699,
+      "f1_at_5": 0.4501
     },
     {
       "model": "User-Based CF",
-      "rmse": 0.7926,
-      "mae": 0.633,
-      "precision_at_5": 0.3551,
-      "recall_at_5": 0.6904,
-      "f1_at_5": 0.469
+      "rmse": 0.8616,
+      "mae": 0.6713,
+      "precision_at_5": 0.3585,
+      "recall_at_5": 0.6666,
+      "f1_at_5": 0.4663
     },
     {
       "model": "Item-Based CF",
-      "rmse": 0.7825,
-      "mae": 0.6291,
-      "precision_at_5": 0.3711,
-      "recall_at_5": 0.7061,
-      "f1_at_5": 0.4865
+      "rmse": 0.8593,
+      "mae": 0.6852,
+      "precision_at_5": 0.3499,
+      "recall_at_5": 0.6525,
+      "f1_at_5": 0.4555
     }
   ],
   "price_prediction": {
@@ -43,8 +43,8 @@
     "data_source": "FAOSTAT Producer Prices \u2014 Kenya, 2010-2024 (real)",
     "n_observations": 192,
     "produce_types": 18,
-    "cv_mae_kes": 12.528,
-    "cv_rmse_kes": 19.283,
+    "cv_mae_kes": 12.526,
+    "cv_rmse_kes": 19.281,
     "mean_price_kes": 63.73,
     "mae_pct_of_mean": 19.7
   },
@@ -53,8 +53,8 @@
     "data_source": "FAOSTAT Production \u2014 Kenya, 2010-2024 (real)",
     "n_observations": 168,
     "produce_types": 12,
-    "cv_mae_tonnes": 124692.8,
-    "cv_rmse_tonnes": 205162.4,
+    "cv_mae_tonnes": 124546.6,
+    "cv_rmse_tonnes": 204879.1,
     "mean_production_tonnes": 689121.6,
     "mae_pct_of_mean": 18.1,
     "scope": "National annual production trend (not per-county/month)"

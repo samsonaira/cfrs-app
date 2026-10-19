@@ -29,9 +29,9 @@
       </tbody>
     </table>
   </div>
-  <p class="muted mt-2" style="font-size:.88rem">Both collaborative filtering models outperform the
-    non-personalised popularity baseline on Precision@5, Recall@5 and F1@5 — evidence that
-    personalisation improves recommendation relevance.</p>
+  {% if eval_summary %}
+  <p class="muted mt-2" style="font-size:.88rem">{{ eval_summary.sentence }}</p>
+  {% endif %}
 
 
   <h3 class="mt-4">Price prediction — trained on real FAO Kenya data</h3>

@@ -81,6 +81,67 @@ def admin_dashboard(request):
     })
 
 
+def _evaluation_verdict(results):
+    """
+    Derive an honest comparison of the CF models against the popularity
+    baseline straight from the evaluation numbers, so the analytics page
+    states what the data shows instead of a hard-coded claim.
+
+    Returns a dict (or None) with the metrics CF wins / loses and a
+    plain-language sentence built from the actual figures.
+    """
+    try:
+        models = {m["model"]: m for m in results["models"]}
+        base = models["Popularity Baseline"]
+        cfs = [models["User-Based CF"], models["Item-Based CF"]]
+    except (KeyError, TypeError):
+        return None
+
+    # (label, json key, higher_is_better)
+    ranking = [("Precision@5", "precision_at_5", True),
+               ("Recall@5", "recall_at_5", True),
+               ("F1@5", "f1_at_5", True)]
+    error = [("RMSE", "rmse", False), ("MAE", "mae", False)]
+
+    def cf_beats_all(key, higher):
+        return all((c[key] > base[key]) if higher else (c[key] < base[key]) for c in cfs)
+
+    cf_better, baseline_better = [], []
+    for label, key, higher in ranking + error:
+        (cf_better if cf_beats_all(key, higher) else baseline_better).append(label)
+
+    def join(items):
+        if len(items) == 1:
+            return items[0]
+        return ", ".join(items[:-1]) + " and " + items[-1]
+
+    parts = []
+    if cf_better:
+        parts.append("Both collaborative-filtering models outperform the "
+                     f"non-personalised popularity baseline on {join(cf_better)}")
+        if baseline_better:
+            parts.append(f", while the baseline records the best {join(baseline_better)}")
+        parts.append(".")
+    else:
+        parts.append("At this data density the popularity baseline matches or "
+                     f"beats both collaborative-filtering models on {join(baseline_better)}; "
+                     "the CF models show no consistent gain.")
+
+    sentence = "".join(parts)
+
+    gain = round(max(c["precision_at_5"] for c in cfs) - base["precision_at_5"], 4)
+    if "Precision@5" in cf_better:
+        sentence += (f" The best Precision@5 gain over the baseline is +{gain} (absolute)")
+        sparsity = results.get("dataset", {}).get("sparsity")
+        if sparsity is not None:
+            sentence += (f", a modest margin consistent with the {round(sparsity * 100, 1)}% "
+                         "sparsity of the interaction matrix")
+        sentence += "."
+
+    return {"cf_better": cf_better, "baseline_better": baseline_better,
+            "precision_gain": gain, "sentence": sentence}
+
+
 @user_passes_test(_is_admin)
 def ml_analytics(request):
     path = os.path.join(settings.BASE_DIR, "ml", "models", "evaluation_results.json")
@@ -88,7 +149,10 @@ def ml_analytics(request):
     if os.path.exists(path):
         with open(path) as fh:
             results = json.load(fh)
-    return render(request, "dashboard_admin/ml_analytics.html", {"results": results})
+    return render(request, "dashboard_admin/ml_analytics.html", {
+        "results": results,
+        "eval_summary": _evaluation_verdict(results) if results else None,
+    })
 
 
 # ── Transaction actions ─────────────────────────────────────────────

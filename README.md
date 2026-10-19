@@ -37,8 +37,23 @@ The ML engine only scores farmers who currently hold an ACTIVE listing, so no
 recommendation ever points to produce that isn't actually available now.
 
 ## Evaluation (real, from held-out test set — never hard-coded)
-Both CF models beat the popularity baseline on Precision@5 / Recall@5 / F1@5.
-See /ml-analytics/ or ml/models/evaluation_results.json.
+Measured on the deterministic dataset (`python ml/data/generate_dataset.py`
+then `python manage.py train_recommender`), held-out test set:
+
+| Model | RMSE | MAE | Precision@5 | Recall@5 | F1@5 |
+|---|---|---|---|---|---|
+| Popularity baseline | 0.8259 | 0.6518 | 0.3389 | 0.6699 | 0.4501 |
+| User-based CF | 0.8616 | 0.6713 | 0.3585 | 0.6666 | 0.4663 |
+| Item-based CF | 0.8593 | 0.6852 | 0.3499 | 0.6525 | 0.4555 |
+
+Both collaborative-filtering models outperform the popularity baseline on
+**Precision@5 and F1@5**. The baseline, however, records the best **Recall@5**
+and the lowest rating error (**RMSE/MAE**). The precision gain is modest
+(about +0.01 to +0.02 absolute), consistent with the 94.8% sparsity of the
+interaction matrix: personalisation improves ranking precision at this data
+density, not recall or rating accuracy. The figures are regenerated on every
+training run and shown at /ml-analytics/ (see also
+ml/models/evaluation_results.json) — none are hard-coded.
 
 ## Key commands
 - `python manage.py train_recommender` — retrain + re-evaluate
@@ -46,7 +61,7 @@ See /ml-analytics/ or ml/models/evaluation_results.json.
 - `python manage.py test` — run test suite
 
 ## Tests
-28 automated tests covering authentication, authorization, listing validation,
+40 automated tests covering authentication, authorization, listing validation,
 the full transaction lifecycle (create -> confirm -> stock decrement -> sold),
 and the ML pipeline (preprocessing, hybrid scoring, cold start). Run:
 ```bash

@@ -1,5 +1,6 @@
 """Marketplace, transaction and authorization tests."""
 from decimal import Decimal
+from django.conf import settings
 from django.test import TestCase, Client
 from django.core.exceptions import ValidationError, PermissionDenied
 from users.models import Account
@@ -206,3 +207,49 @@ class DjangoAdminTests(TestCase):
                     "/admin/marketplace/transaction/",
                     "/admin/marketplace/recommendationrecord/"]:
             self.assertEqual(c.get(url).status_code, 200, url)
+
+
+class EvaluationVerdictTests(TestCase):
+    """Item 1: the analytics verdict must follow the numbers, not overclaim."""
+
+    def _results(self, base, user, item):
+        keys = ["rmse", "mae", "precision_at_5", "recall_at_5", "f1_at_5"]
+        mk = lambda name, vals: {"model": name, **dict(zip(keys, vals))}
+        return {
+            "dataset": {"sparsity": 0.94841},
+            "models": [mk("Popularity Baseline", base),
+                       mk("User-Based CF", user),
+                       mk("Item-Based CF", item)],
+        }
+
+    def test_recall_and_error_not_claimed_when_baseline_wins(self):
+        from marketplace.views import _evaluation_verdict
+        # Real deterministic numbers: CF wins P@5/F1@5, baseline wins R@5/RMSE/MAE.
+        r = self._results(
+            base=[0.8259, 0.6518, 0.3389, 0.6699, 0.4501],
+            user=[0.8616, 0.6713, 0.3585, 0.6666, 0.4663],
+            item=[0.8593, 0.6852, 0.3499, 0.6525, 0.4555])
+        v = _evaluation_verdict(r)
+        self.assertEqual(v["cf_better"], ["Precision@5", "F1@5"])
+        self.assertIn("Recall@5", v["baseline_better"])
+        self.assertIn("RMSE", v["baseline_better"])
+        self.assertIn("MAE", v["baseline_better"])
+        # Must NOT repeat the old overclaim that CF beats baseline on Recall@5.
+        self.assertNotIn("on Precision@5, Recall@5 and F1@5", v["sentence"])
+        self.assertIn("baseline records the best", v["sentence"])
+
+    def test_verdict_tracks_the_numbers_if_cf_wins_everything(self):
+        from marketplace.views import _evaluation_verdict
+        # Hypothetical run where CF beats baseline on all ranking metrics.
+        r = self._results(
+            base=[0.90, 0.70, 0.30, 0.60, 0.40],
+            user=[0.80, 0.60, 0.35, 0.65, 0.45],
+            item=[0.81, 0.61, 0.34, 0.64, 0.44])
+        v = _evaluation_verdict(r)
+        self.assertEqual(v["cf_better"], ["Precision@5", "Recall@5", "F1@5", "RMSE", "MAE"])
+        self.assertEqual(v["baseline_better"], [])
+
+    def test_analytics_page_has_no_hardcoded_claim(self):
+        tpl = (settings.BASE_DIR / "templates" / "dashboard_admin" / "ml_analytics.html").read_text()
+        self.assertNotIn("outperform the", tpl)
+        self.assertIn("eval_summary.sentence", tpl)
