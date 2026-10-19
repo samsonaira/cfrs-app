@@ -134,3 +134,63 @@ class ColdStartProfileFallbackTests(TestCase):
         mode, recs = get_recommendations(self.buyer, persist=False)
         self.assertEqual(mode, "COLD_START")
         self.assertEqual(len(recs), 4)
+
+
+class RecommendationWriteSafetyTests(TestCase):
+    """Item 4: GET must not write; POST (own) writes a bounded snapshot."""
+
+    def setUp(self):
+        from users.models import Account, BuyerProfile
+        from marketplace.models import ProduceListing
+        farmer = Account.objects.create_user(
+            username="ws_f@t.ke", email="ws_f@t.ke", password="x", role="FARMER")
+        for produce, location in [("Tea", "Mombasa"), ("Maize", "Kiambu"),
+                                  ("Maize", "Nakuru"), ("Rice", "Kiambu")]:
+            ProduceListing.objects.create(
+                farmer=farmer, produce_name=produce, quantity=100,
+                asking_price=50, location=location, status="ACTIVE")
+        self.buyer = Account.objects.create_user(
+            username="ws_b@t.ke", email="ws_b@t.ke", password="x", role="BUYER")
+        BuyerProfile.objects.create(
+            account=self.buyer, preferred_produce="maize", preferred_location="kiambu")
+        self.admin = Account.objects.create_user(
+            username="ws_a@t.ke", email="ws_a@t.ke", password="x", role="ADMINISTRATOR")
+
+    def _count(self):
+        from marketplace.models import RecommendationRecord
+        return RecommendationRecord.objects.count()
+
+    def test_get_own_does_not_write(self):
+        from django.test import Client
+        c = Client(); c.force_login(self.buyer)
+        resp = c.get("/api/recommendations/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["recommendations"])      # still returns data
+        self.assertEqual(self._count(), 0)                   # but writes nothing
+
+    def test_get_admin_viewing_other_buyer_does_not_write(self):
+        from django.test import Client
+        c = Client(); c.force_login(self.admin)
+        resp = c.get(f"/api/recommendations/{self.buyer.username}/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self._count(), 0)
+
+    def test_post_own_writes_bounded_snapshot_and_replaces(self):
+        from django.test import Client
+        from marketplace.models import RecommendationRecord
+        c = Client(); c.force_login(self.buyer)
+        self.assertEqual(c.post("/api/recommendations/").status_code, 200)
+        first = self._count()
+        self.assertGreater(first, 0)
+        self.assertLessEqual(first, 10)
+        self.assertTrue(RecommendationRecord.objects.filter(buyer=self.buyer).exists())
+        # posting again replaces, never appends -> count stays the same
+        self.assertEqual(c.post("/api/recommendations/").status_code, 200)
+        self.assertEqual(self._count(), first)
+
+    def test_admin_post_to_other_buyer_does_not_write(self):
+        from django.test import Client
+        c = Client(); c.force_login(self.admin)
+        resp = c.post(f"/api/recommendations/{self.buyer.username}/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(self._count(), 0)

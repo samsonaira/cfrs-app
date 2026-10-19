@@ -75,7 +75,10 @@ btn.addEventListener('click', async () => {
   status.textContent = 'Finding the best farmer matches for you…';
   results.innerHTML = '';
   try {
-    const res = await fetch('/api/recommendations/', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+    const res = await fetch('/api/recommendations/', {
+      method: 'POST',
+      headers: {'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}'},
+    });
     const data = await res.json();
     if (!data.success || data.count === 0) {
       status.textContent = 'No matches yet — try browsing the marketplace to build your history.';

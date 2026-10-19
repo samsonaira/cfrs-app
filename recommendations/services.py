@@ -67,7 +67,7 @@ def _profile_preferences(buyer_account):
     return {"produce": produce, "location": {location: 1.0} if location else {}}
 
 
-def get_recommendations(buyer_account, top_n=10, weights=None, persist=True):
+def get_recommendations(buyer_account, top_n=10, weights=None, persist=False):
     """
     Returns (mode, recommendations[]) where each recommendation is backed
     by a CURRENT active listing. Farmers recommended by the ML model who
@@ -114,8 +114,13 @@ def get_recommendations(buyer_account, top_n=10, weights=None, persist=True):
         cf_algo=cf_algo, weights=weights, top_n=top_n,
     )
 
-    # 3. Optionally persist for the analytics/audit trail
+    # 3. Optionally persist the latest snapshot for the analytics/audit trail.
+    #    persist is False by default: a GET must not write. When a buyer
+    #    explicitly requests their own recommendations (POST), we REPLACE their
+    #    previous snapshot instead of appending, so the table never grows
+    #    without bound (at most top_n rows per buyer).
     if persist and recs:
+        from django.db import transaction as _tx
         records = [
             RecommendationRecord(
                 buyer=buyer_account,
@@ -130,6 +135,8 @@ def get_recommendations(buyer_account, top_n=10, weights=None, persist=True):
             )
             for r in recs
         ]
-        RecommendationRecord.objects.bulk_create(records)
+        with _tx.atomic():
+            RecommendationRecord.objects.filter(buyer=buyer_account).delete()
+            RecommendationRecord.objects.bulk_create(records)
 
     return mode, recs
