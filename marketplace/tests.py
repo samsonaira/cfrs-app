@@ -325,3 +325,35 @@ class RequestMessageRoundingTests(TestCase):
         msgs = " ".join(str(m) for m in list(resp.context["messages"]))
         self.assertIn("Total KSh", msgs)
         self.assertNotRegex(msgs, r"KSh \d+\.\d{3,}")  # never 3+ decimal places
+
+
+class PendingReservationTests(TestCase):
+    """Item 5: outstanding pending requests reserve stock at request time."""
+
+    def setUp(self):
+        farmer = Account.objects.create_user(
+            username="pr_f@t.ke", email="pr_f@t.ke", password="x", role="FARMER")
+        self.b1 = Account.objects.create_user(
+            username="pr_b1@t.ke", email="pr_b1@t.ke", password="x", role="BUYER")
+        self.b2 = Account.objects.create_user(
+            username="pr_b2@t.ke", email="pr_b2@t.ke", password="x", role="BUYER")
+        self.listing = ProduceListing.objects.create(
+            farmer=farmer, produce_name="Maize", quantity=Decimal("100"),
+            asking_price=50, location="Kiambu", status="ACTIVE")
+
+    def test_pending_requests_cannot_oversubscribe_stock(self):
+        create_transaction(self.b1, self.listing.pk, Decimal("60"))   # 40 left
+        with self.assertRaises(TransactionError):
+            create_transaction(self.b2, self.listing.pk, Decimal("50"))  # too much now
+        tx = create_transaction(self.b2, self.listing.pk, Decimal("40"))  # exactly fits
+        self.assertEqual(tx.status, Transaction.Status.PENDING)
+        with self.assertRaises(TransactionError):
+            create_transaction(self.b1, self.listing.pk, Decimal("1"))   # nothing left
+
+    def test_cancelling_a_pending_request_frees_the_reservation(self):
+        t1 = create_transaction(self.b1, self.listing.pk, Decimal("100"))
+        with self.assertRaises(TransactionError):
+            create_transaction(self.b2, self.listing.pk, Decimal("10"))
+        cancel_transaction(self.b1, t1.pk)
+        tx = create_transaction(self.b2, self.listing.pk, Decimal("10"))
+        self.assertEqual(tx.status, Transaction.Status.PENDING)

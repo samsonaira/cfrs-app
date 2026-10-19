@@ -5,6 +5,7 @@ validation, so views stay thin and rules live in one place.
 from decimal import Decimal
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction as db_tx
+from django.db.models import Sum
 
 from marketplace.models import ProduceListing, Transaction
 
@@ -35,9 +36,22 @@ def create_transaction(buyer, listing_id, quantity):
         raise TransactionError("That listing no longer exists.")
     if not listing.is_active:
         raise TransactionError("That listing is no longer available.")
-    if quantity > listing.quantity:
+
+    # Reserve stock at request time: pending requests already outstanding
+    # against this listing count against its quantity, so several buyers can't
+    # each reserve more than is actually available. (select_for_update above
+    # serialises concurrent requests on this listing row.)
+    reserved = (Transaction.objects
+                .filter(listing=listing, status=Transaction.Status.PENDING)
+                .aggregate(total=Sum("quantity"))["total"] or Decimal("0"))
+    available = listing.quantity - reserved
+    if available <= 0:
         raise TransactionError(
-            f"Only {listing.quantity} {listing.unit} available.")
+            "No stock is currently available — all of it has pending requests.")
+    if quantity > available:
+        raise TransactionError(
+            f"Only {available} {listing.unit} available "
+            f"({reserved} already has pending requests).")
 
     tx = Transaction(
         buyer=buyer, farmer=listing.farmer, listing=listing,
