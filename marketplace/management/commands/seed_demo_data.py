@@ -67,7 +67,8 @@ class Command(BaseCommand):
             acct, made = Account.objects.get_or_create(
                 username=fid,
                 defaults=dict(email=f"{fid.lower()}@farm.ke", role="FARMER",
-                              first_name=f"Farmer {fid}", location=loc),
+                              first_name=f"Farmer {fid}", location=loc,
+                              email_verified=True),
             )
             if made:
                 acct.set_password(DEMO_PASSWORD); acct.save()
@@ -92,7 +93,8 @@ class Command(BaseCommand):
             acct, made = Account.objects.get_or_create(
                 username=bid,
                 defaults=dict(email=f"{bid.lower()}@buyer.ke", role="BUYER",
-                              first_name=f"Buyer {bid}", location=top_loc),
+                              first_name=f"Buyer {bid}", location=top_loc,
+                              email_verified=True),
             )
             if made:
                 acct.set_password(DEMO_PASSWORD); acct.save()
@@ -158,7 +160,7 @@ class Command(BaseCommand):
         for username, email, role in specs:
             acct, made = Account.objects.get_or_create(
                 username=username,
-                defaults=dict(email=email, role=role,
+                defaults=dict(email=email, role=role, email_verified=True,
                               first_name=username.replace("demo_", "Demo ").title()),
             )
             if made:

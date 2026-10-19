@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Verify your email — CFRS{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <span class="eyebrow">One last step</span>
+  <h2 class="mt-1">Verify your email</h2>
+  <p class="muted mt-1">We sent a 6-digit code to <strong>{{ masked_email }}</strong>. Enter it below to activate your account.</p>
+
+  <form method="post" action="{% url 'verify_email' %}" class="auth-card mt-3" id="otpForm">
+    {% csrf_token %}
+    <input type="hidden" name="code" id="code">
+    <label style="font-weight:600;font-size:.9rem;color:var(--green-900)">Verification code</label>
+    <div class="otp-grid" id="otp" role="group" aria-label="6-digit verification code">
+      <input class="otp" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="Digit 1" autofocus>
+      <input class="otp" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+      <input class="otp" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+      <input class="otp" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+      <input class="otp" inputmode="numeric" maxlength="1" aria-label="Digit 5">
+      <input class="otp" inputmode="numeric" maxlength="1" aria-label="Digit 6">
+    </div>
+    <div class="hint">Paste the whole code or type each digit. It expires in 10 minutes.</div>
+    <button class="btn btn-gold btn-block mt-3" id="verifyBtn" disabled>Verify email</button>
+  </form>
+
+  <div class="card card-p mt-3 center">
+    <p class="muted" style="margin:0">Didn't get the code? Check your spam folder, or</p>
+    <form method="post" action="{% url 'resend_code' %}" style="margin-top:10px">
+      {% csrf_token %}
+      <button id="resendBtn" class="btn btn-ghost btn-sm">Resend code</button>
+      <span id="resendTimer" class="muted" style="font-size:.85rem"></span>
+    </form>
+  </div>
+
+  <p class="muted mt-3 center" style="font-size:.9rem">
+    <a href="/login/">Back to sign in</a> · <a href="/register/">Use a different account</a>
+  </p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('#otp .otp'));
+  var hidden = document.getElementById('code');
+  var btn = document.getElementById('verifyBtn');
+  var form = document.getElementById('otpForm');
+
+  function sync() {
+    var v = boxes.map(function (b) { return b.value; }).join('');
+    hidden.value = v;
+    boxes.forEach(function (b) { b.classList.toggle('filled', b.value !== ''); });
+    btn.disabled = v.length !== 6;
+    return v;
+  }
+  boxes.forEach(function (box, i) {
+    box.addEventListener('input', function () {
+      box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+      if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+      sync();
+    });
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && !box.value && i > 0) { boxes[i - 1].focus(); }
+      if (e.key === 'ArrowLeft' && i > 0) boxes[i - 1].focus();
+      if (e.key === 'ArrowRight' && i < boxes.length - 1) boxes[i + 1].focus();
+    });
+    box.addEventListener('paste', function (e) {
+      e.preventDefault();
+      var digits = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').slice(0, 6).split('');
+      boxes.forEach(function (b, j) { b.value = digits[j] || ''; });
+      var next = Math.min(digits.length, boxes.length - 1);
+      boxes[next].focus();
+      sync();
+    });
+  });
+  form.addEventListener('submit', function () { btn.classList.add('is-loading'); btn.disabled = true; });
+
+  // Resend cooldown (server also rate-limits; this is UX only)
+  var COOLDOWN = {{ resend_cooldown|default:60 }}, rb = document.getElementById('resendBtn'),
+      rt = document.getElementById('resendTimer'), rem = COOLDOWN;
+  function tick() {
+    if (rem <= 0) { rb.disabled = false; rt.textContent = ''; return; }
+    rb.disabled = true; rt.textContent = ' — available in ' + rem + 's'; rem -= 1; setTimeout(tick, 1000);
+  }
+  if (rb) tick();
+})();
+</script>
+{% endblock %}

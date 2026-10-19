@@ -5,8 +5,12 @@ The Account model replaces Django's default User so that role
 (Farmer / Buyer / Administrator) is a first-class field and so the
 schema stays portable to MySQL later without restructuring.
 """
+import secrets
+
+from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class Account(AbstractUser):
@@ -21,6 +25,10 @@ class Account(AbstractUser):
     phone_number = models.CharField(max_length=20, blank=True)
     location = models.CharField(max_length=120, blank=True)
     role = models.CharField(max_length=15, choices=Role.choices, default=Role.BUYER)
+    email_verified = models.BooleanField(
+        default=False,
+        help_text="True once the user has confirmed their email via a one-time code.",
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -81,3 +89,56 @@ class BuyerProfile(models.Model):
 
     def preferred_produce_list(self):
         return [p.strip() for p in self.preferred_produce.split(",") if p.strip()]
+
+
+class EmailVerificationCode(models.Model):
+    """
+    A single-use, time-limited one-time code (OTP) for email verification.
+
+    The code itself is never stored in plaintext: only a salted hash is kept
+    (the same hashing Django uses for passwords), so a database leak cannot
+    reveal valid codes. Codes expire, allow a limited number of attempts, and
+    are invalidated on use or when a newer code is issued.
+    """
+
+    EXPIRY_MINUTES = 10
+    MAX_ATTEMPTS = 5
+    CODE_LENGTH = 6
+
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, related_name="verification_codes"
+    )
+    code_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveIntegerField(default=0)
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"VerificationCode<{self.account.email} @ {self.created_at:%Y-%m-%d %H:%M}>"
+
+    @classmethod
+    def generate_plaintext(cls):
+        """A cryptographically secure zero-padded numeric code."""
+        return f"{secrets.randbelow(10 ** cls.CODE_LENGTH):0{cls.CODE_LENGTH}d}"
+
+    def set_code(self, plaintext):
+        self.code_hash = make_password(plaintext)
+
+    def check_code(self, plaintext):
+        return check_password((plaintext or "").strip(), self.code_hash)
+
+    @property
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
+
+    @property
+    def attempts_exhausted(self):
+        return self.attempts >= self.MAX_ATTEMPTS
+
+    @property
+    def is_usable(self):
+        return not self.is_used and not self.is_expired and not self.attempts_exhausted

@@ -30,7 +30,7 @@ class AuthTests(TestCase):
 
     def test_login_and_logout(self):
         Account.objects.create_user(username="u@t.ke", email="u@t.ke",
-            password="Str0ngPass!23", role="BUYER")
+            password="Str0ngPass!23", role="BUYER", email_verified=True)
         c = Client()
         ok = c.post(reverse("login"),
                     {"email": "u@t.ke", "password": "Str0ngPass!23"})
@@ -75,3 +75,178 @@ class RolePropertyTests(TestCase):
         self.assertTrue(f.is_farmer and not f.is_buyer)
         self.assertTrue(b.is_buyer and not b.is_farmer)
         self.assertTrue(a.is_administrator)
+# --- OTP email-verification tests (ported) ---
+
+
+
+import re
+from datetime import timedelta
+from unittest.mock import patch
+from django.core import mail
+from django.test import override_settings
+from django.utils import timezone
+from users.models import EmailVerificationCode
+from users import otp
+
+REG = {
+    "role": "BUYER", "first_name": "Test", "email": "buyer@t.ke",
+    "location": "Nakuru", "password1": "Str0ngPass!23", "password2": "Str0ngPass!23",
+}
+
+
+def code_from_outbox():
+    """Extract the 6-digit code from the most recent email."""
+    body = mail.outbox[-1].body
+    return re.search(r"\b(\d{6})\b", body).group(1)
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    OTP_RESEND_COOLDOWN_SECONDS=0,
+)
+class EmailVerificationTests(TestCase):
+    """The 12 verification scenarios required by the feature specification."""
+
+    def setUp(self):
+        self.c = Client()
+        mail.outbox = []
+
+    def _register(self, email="buyer@t.ke", role="BUYER"):
+        self.c.post(reverse("register"), {**REG, "email": email, "role": role})
+        return Account.objects.get(email=email)
+
+    # 1. Registration sends a verification code.
+    def test_registration_sends_code(self):
+        acct = self._register()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(EmailVerificationCode.objects.filter(account=acct).count(), 1)
+        self.assertFalse(acct.email_verified)
+        self.assertFalse(acct.is_active)
+
+    # 2. The correct code verifies the account.
+    def test_correct_code_verifies(self):
+        acct = self._register()
+        resp = self.c.post(reverse("verify_email"), {"code": code_from_outbox()})
+        self.assertEqual(resp.status_code, 302)
+        acct.refresh_from_db()
+        self.assertTrue(acct.email_verified)
+        self.assertTrue(acct.is_active)
+        self.assertIn("_auth_user_id", self.c.session)  # logged in after verify
+
+    # 3. An incorrect code is rejected.
+    def test_incorrect_code_rejected(self):
+        acct = self._register()
+        self.c.post(reverse("verify_email"), {"code": "000000"})
+        acct.refresh_from_db()
+        self.assertFalse(acct.email_verified)
+
+    # 4. An expired code is rejected.
+    def test_expired_code_rejected(self):
+        acct = self._register()
+        real = code_from_outbox()
+        code = EmailVerificationCode.objects.filter(account=acct, is_used=False).first()
+        code.expires_at = timezone.now() - timedelta(minutes=1)
+        code.save(update_fields=["expires_at"])
+        self.c.post(reverse("verify_email"), {"code": real})
+        acct.refresh_from_db()
+        self.assertFalse(acct.email_verified)
+
+    # 5. A code cannot be reused after successful verification.
+    def test_code_not_reusable(self):
+        acct = self._register()
+        real = code_from_outbox()
+        self.c.post(reverse("verify_email"), {"code": real})     # verifies, logs in
+        acct.refresh_from_db()
+        self.assertTrue(acct.email_verified)
+        acct.email_verified = False  # pretend we try to reuse the same code
+        acct.save(update_fields=["email_verified"])
+        ok, _ = otp.verify(acct, real)
+        self.assertFalse(ok)  # the code is already marked used
+
+    # 6. Resending a code invalidates the previous code.
+    def test_resend_invalidates_previous(self):
+        acct = self._register()
+        first = code_from_outbox()
+        self.c.post(reverse("resend_code"))
+        second = code_from_outbox()
+        self.assertNotEqual(first, second)
+        # old code no longer verifies
+        self.assertFalse(otp.verify(acct, first)[0])
+        # new code does
+        self.assertTrue(otp.verify(acct, second)[0])
+
+    # 7. Too many verification attempts are blocked.
+    def test_too_many_attempts_blocked(self):
+        acct = self._register()
+        real = code_from_outbox()
+        for _ in range(EmailVerificationCode.MAX_ATTEMPTS):
+            ok, _ = otp.verify(acct, "111111")
+            self.assertFalse(ok)
+        # the correct code no longer works — the code was invalidated
+        ok, _ = otp.verify(acct, real)
+        self.assertFalse(ok)
+
+    # 8. Unverified users cannot log in.
+    def test_unverified_cannot_log_in(self):
+        self._register()
+        resp = self.c.post(reverse("login"),
+                           {"email": "buyer@t.ke", "password": "Str0ngPass!23"})
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("verify-email", resp.url)
+        self.assertNotIn("_auth_user_id", self.c.session)
+
+    # 9. Verified users can log in and reach their correct dashboard.
+    def test_verified_user_logs_in_to_dashboard(self):
+        self._register()
+        self.c.post(reverse("verify_email"), {"code": code_from_outbox()})
+        self.c.get(reverse("logout"))
+        resp = self.c.post(reverse("login"),
+                          {"email": "buyer@t.ke", "password": "Str0ngPass!23"},
+                          follow=True)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, "buyer/dashboard.html")
+
+    # 10. Direct URL access cannot bypass verification.
+    def test_direct_dashboard_access_blocked(self):
+        self._register()  # not verified, not logged in
+        resp = self.c.get(reverse("dashboard"))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/login", resp.url)
+
+    # 11. Email delivery failures are handled without false success or leaks.
+    def test_email_failure_handled(self):
+        acct = Account.objects.create_user(
+            username="f@t.ke", email="f@t.ke", password="Str0ngPass!23",
+            role="BUYER", is_active=False)
+        with patch("users.otp._send_email", side_effect=Exception("SMTP down")):
+            ok, msg = otp.create_and_send(acct, force=True)
+        self.assertFalse(ok)                      # no false success
+        self.assertNotRegex(msg, r"\d{6}")        # no code leaked in the message
+        self.assertEqual(EmailVerificationCode.objects.filter(account=acct).count(), 0)
+        acct.refresh_from_db()
+        self.assertFalse(acct.email_verified)
+
+    # 12. The workflow works across the Farmer, Buyer and Administrator roles.
+    def test_roles_farmer_buyer_admin(self):
+        # Farmer: verify then reach farmer dashboard
+        self._register(email="farmer@t.ke", role="FARMER")
+        self.c.post(reverse("verify_email"), {"code": code_from_outbox()})
+        r = self.c.get(reverse("dashboard"), follow=True)
+        self.assertTemplateUsed(r, "farmer/dashboard.html")
+        self.c.get(reverse("logout"))
+
+        # Buyer: verify then reach buyer dashboard
+        self._register(email="buyer2@t.ke", role="BUYER")
+        self.c.post(reverse("verify_email"), {"code": code_from_outbox()})
+        r = self.c.get(reverse("dashboard"), follow=True)
+        self.assertTemplateUsed(r, "buyer/dashboard.html")
+        self.c.get(reverse("logout"))
+
+        # Administrator (superuser) is exempt from email verification
+        Account.objects.create_superuser(
+            username="admin@t.ke", email="admin@t.ke", password="Str0ngPass!23",
+            role="ADMINISTRATOR")
+        resp = self.c.post(reverse("login"),
+                          {"email": "admin@t.ke", "password": "Str0ngPass!23"})
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("_auth_user_id", self.c.session)
