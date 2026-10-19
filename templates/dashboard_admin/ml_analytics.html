@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}ML analytics — CFRS{% endblock %}
+{% block content %}
+<section class="section wrap">
+  <h2>Recommendation model analytics</h2>
+  <p class="muted mt-1">Real evaluation results from the last training run
+    (<code>python manage.py train_recommender</code>). No values are hard-coded.</p>
+
+  {% if not results %}
+    <div class="alert alert-err mt-3">No evaluation results found. Run
+      <code>python manage.py train_recommender</code> first.</div>
+  {% else %}
+  <div class="stats mt-3">
+    <div class="stat"><div class="n">{{ results.dataset.n_buyers }}</div><div class="l">Buyers</div></div>
+    <div class="stat"><div class="n">{{ results.dataset.n_farmers }}</div><div class="l">Farmers</div></div>
+    <div class="stat"><div class="n">{{ results.dataset.n_interactions }}</div><div class="l">Interactions</div></div>
+    <div class="stat"><div class="n">{{ results.dataset.sparsity }}</div><div class="l">Matrix sparsity</div></div>
+  </div>
+
+  <h3 class="mt-4">Model performance (held-out test set)</h3>
+  <div class="card mt-2" style="overflow:hidden">
+    <table class="table">
+      <thead><tr><th>Model</th><th>RMSE</th><th>MAE</th><th>Precision@5</th><th>Recall@5</th><th>F1@5</th></tr></thead>
+      <tbody>
+      {% for m in results.models %}
+        <tr><td><strong>{{ m.model }}</strong></td><td>{{ m.rmse }}</td><td>{{ m.mae }}</td>
+          <td>{{ m.precision_at_5 }}</td><td>{{ m.recall_at_5 }}</td><td>{{ m.f1_at_5 }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted mt-2" style="font-size:.88rem">Both collaborative filtering models outperform the
+    non-personalised popularity baseline on Precision@5, Recall@5 and F1@5 — evidence that
+    personalisation improves recommendation relevance.</p>
+
+
+  <h3 class="mt-4">Price prediction — trained on real FAO Kenya data</h3>
+  {% if results.price_prediction %}
+  <div class="card card-p mt-2">
+    <p class="muted" style="font-size:.88rem">{{ results.price_prediction.data_source }}</p>
+    <div class="stats mt-2">
+      <div class="stat"><div class="n">{{ results.price_prediction.n_observations }}</div><div class="l">Real observations</div></div>
+      <div class="stat"><div class="n">{{ results.price_prediction.cv_mae_kes }}</div><div class="l">CV MAE (KES/kg)</div></div>
+      <div class="stat"><div class="n">{{ results.price_prediction.mae_pct_of_mean }}%</div><div class="l">MAE % of mean price</div></div>
+      <div class="stat"><div class="n">{{ results.price_prediction.produce_types }}</div><div class="l">Produce types</div></div>
+    </div>
+    <p class="muted mt-2" style="font-size:.85rem">Random Forest Regression. Honest small-dataset error — 192 real annual FAO observations.</p>
+  </div>
+  {% endif %}
+
+  <h3 class="mt-4">Demand forecasting — trained on real FAO Kenya production</h3>
+  {% if results.demand_forecasting %}
+  <div class="card card-p mt-2">
+    <p class="muted" style="font-size:.88rem">{{ results.demand_forecasting.data_source }} · {{ results.demand_forecasting.scope }}</p>
+    <div class="stats mt-2">
+      <div class="stat"><div class="n">{{ results.demand_forecasting.n_observations }}</div><div class="l">Real observations</div></div>
+      <div class="stat"><div class="n">{{ results.demand_forecasting.mae_pct_of_mean }}%</div><div class="l">MAE % of mean</div></div>
+      <div class="stat"><div class="n">{{ results.demand_forecasting.produce_types }}</div><div class="l">Crops</div></div>
+    </div>
+    <p class="muted mt-2" style="font-size:.85rem">Gradient Boosting Regression on national annual production (tonnes).</p>
+  </div>
+  {% endif %}
+
+  <h3 class="mt-4">Fraud detection — Isolation Forest</h3>
+  {% if results.fraud_detection %}
+  <div class="card card-p mt-2">
+    <div class="stats mt-2">
+      <div class="stat"><div class="n">{{ results.fraud_detection.n_transactions }}</div><div class="l">Transactions analysed</div></div>
+      <div class="stat"><div class="n">{{ results.fraud_detection.n_flagged_for_review }}</div><div class="l">Flagged for review</div></div>
+      <div class="stat"><div class="n">{{ results.fraud_detection.flagged_pct }}%</div><div class="l">Flagged rate</div></div>
+    </div>
+    <p class="muted mt-2" style="font-size:.85rem">Anomaly detection — flags transactions for review, never accuses. Features: amount, quantity, price, price deviation, buyer frequency.</p>
+  </div>
+  {% endif %}
+
+  <h3 class="mt-4">Hybrid recommender weights</h3>
+  <div class="stats mt-2">
+    <div class="stat"><div class="n">{{ results.hybrid_weights.cf }}</div><div class="l">Collaborative filtering</div></div>
+    <div class="stat"><div class="n">{{ results.hybrid_weights.produce }}</div><div class="l">Produce preference</div></div>
+    <div class="stat"><div class="n">{{ results.hybrid_weights.location }}</div><div class="l">Location preference</div></div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

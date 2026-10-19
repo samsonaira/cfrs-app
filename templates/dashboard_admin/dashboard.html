@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Administrator — CFRS{% endblock %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+<section class="section wrap">
+  <div class="row between">
+    <div><h2>Platform overview</h2><p class="muted mt-1">Live figures from the database.</p></div>
+    <a href="/ml-analytics/" class="btn btn-gold">ML analytics</a>
+  </div>
+  <div class="stats mt-3">
+    <div class="stat"><div class="n">{{ stats.farmers }}</div><div class="l">Farmers</div></div>
+    <div class="stat"><div class="n">{{ stats.buyers }}</div><div class="l">Buyers</div></div>
+    <div class="stat"><div class="n">{{ stats.active_listings }}</div><div class="l">Active listings</div></div>
+    <div class="stat"><div class="n">{{ stats.total_tx }}</div><div class="l">Transactions</div></div>
+    <div class="stat"><div class="n">{{ stats.pending_tx }}</div><div class="l">Pending</div></div>
+    <div class="stat"><div class="n">{{ stats.completed_tx }}</div><div class="l">Completed</div></div>
+    <div class="stat"><div class="n">{{ stats.cancelled_tx }}</div><div class="l">Cancelled</div></div>
+    <div class="stat"><div class="n">{{ stats.rec_requests }}</div><div class="l">Buyers served recs</div></div>
+  </div>
+  <div class="grid mt-4" style="grid-template-columns:1fr 1fr">
+    <div class="card card-p"><h3>Listings by produce</h3><canvas id="c1" height="200"></canvas></div>
+    <div class="card card-p"><h3>Listings by location</h3><canvas id="c2" height="200"></canvas></div>
+  </div>
+
+  <h3 class="mt-4">Transactions flagged for review
+    <span class="badge badge-warn">{{ flagged|length }}</span></h3>
+  <p class="muted mt-1" style="font-size:.9rem">Flagged by the Isolation Forest model as
+    statistical anomalies. This is a prompt to review — not an accusation.</p>
+  <div class="card mt-2" style="overflow:hidden">
+    <table class="table">
+      <thead><tr><th>Tx</th><th>Buyer</th><th>Farmer</th><th>Produce</th><th>Qty</th><th>Amount</th><th>Anomaly score</th></tr></thead>
+      <tbody>
+      {% for f in flagged %}
+        <tr><td>#{{ f.id }}</td><td>{{ f.buyer }}</td><td>{{ f.farmer }}</td>
+          <td>{{ f.produce }}</td><td>{{ f.quantity }}</td><td>KSh {{ f.amount }}</td>
+          <td><span class="badge badge-danger">{{ f.score }}</span></td></tr>
+      {% empty %}
+        <tr><td colspan="7" class="muted center" style="padding:24px">No transactions flagged for review.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+{{ produce_labels|json_script:"produce-labels" }}
+{{ produce_values|json_script:"produce-values" }}
+{{ location_labels|json_script:"location-labels" }}
+{{ location_values|json_script:"location-values" }}
+<script>
+const g='#2d8a55';
+const chartData = id => JSON.parse(document.getElementById(id).textContent);
+new Chart(document.getElementById('c1'),{type:'bar',
+  data:{labels:chartData('produce-labels'),datasets:[{data:chartData('produce-values'),backgroundColor:g}]},
+  options:{plugins:{legend:{display:false}}}});
+new Chart(document.getElementById('c2'),{type:'bar',
+  data:{labels:chartData('location-labels'),datasets:[{data:chartData('location-values'),backgroundColor:'#e0a52e'}]},
+  options:{plugins:{legend:{display:false}}}});
+</script>
+{% endblock %}

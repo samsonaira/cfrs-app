@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ listing.produce_name }} — CFRS{% endblock %}
+{% block content %}
+<section class="section wrap" style="max-width:640px">
+  <a href="/marketplace/" class="muted">← Back to marketplace</a>
+  <div class="card card-p mt-2">
+    <div class="row between"><h2>{{ listing.produce_name }}</h2>
+      <span class="badge {% if listing.is_active %}badge-ok{% else %}badge-muted{% endif %}">{{ listing.get_status_display }}</span></div>
+    <div class="muted mt-1">{{ listing.location }}</div>
+    <div class="stats mt-3">
+      <div class="stat"><div class="n">{{ listing.quantity }}</div><div class="l">{{ listing.unit }} available</div></div>
+      <div class="stat"><div class="n">KSh {{ listing.asking_price }}</div><div class="l">per {{ listing.unit }}</div></div>
+    </div>
+    <h3 class="mt-3">Farmer</h3>
+    <p class="mt-1">{{ listing.farmer.get_full_name|default:listing.farmer.username }} · {{ listing.location }}</p>
+    {% if listing.description %}<p class="muted mt-2">{{ listing.description }}</p>{% endif %}
+    {% if user.is_buyer and listing.is_active %}
+      <form method="post" action="{% url 'start_transaction' listing.pk %}" class="mt-3">
+        {% csrf_token %}
+        <div class="field" style="max-width:200px">
+          <label>Quantity ({{ listing.unit }})</label>
+          <input type="number" name="quantity" min="1" max="{{ listing.quantity }}"
+                 value="1" step="1" required>
+          <div class="hint">Up to {{ listing.quantity }} {{ listing.unit }} available</div>
+        </div>
+        <button class="btn btn-gold">Start transaction</button>
+      </form>
+    {% elif user.is_farmer %}
+      <p class="muted mt-3">Farmers cannot purchase listings.</p>
+    {% elif not user.is_authenticated %}
+      <a href="/login/" class="btn btn-gold mt-3">Sign in to buy</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

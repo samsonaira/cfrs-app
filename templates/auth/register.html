@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Create account — CFRS{% endblock %}
+{% block content %}
+<section class="section wrap" style="max-width:480px">
+  <h2>Create your account</h2>
+  <p class="muted mt-1">Join as a buyer to get recommendations, or a farmer to list produce.</p>
+  <form method="post" class="card card-p mt-3">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-err">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="field"><label>I am a</label>
+      <select name="role">
+        <option value="BUYER" {% if form.role.value == 'BUYER' %}selected{% endif %}>Buyer</option>
+        <option value="FARMER" {% if form.role.value == 'FARMER' %}selected{% endif %}>Farmer</option>
+      </select></div>
+    <div class="field"><label>Full name</label>
+      <input name="first_name" required value="{{ form.first_name.value|default:'' }}">
+      {% if form.first_name.errors %}<div class="err">{{ form.first_name.errors|striptags }}</div>{% endif %}</div>
+    <div class="field"><label>Email</label>
+      <input type="email" name="email" required value="{{ form.email.value|default:'' }}">
+      {% if form.email.errors %}<div class="err">{{ form.email.errors|striptags }}</div>{% endif %}</div>
+    <div class="field"><label>Location</label>
+      <input name="location" value="{{ form.location.value|default:'' }}" placeholder="e.g. Nakuru"></div>
+    <div class="field"><label>Password</label>
+      <input type="password" name="password1" required>
+      {% if form.password1.errors %}<div class="err">{{ form.password1.errors|striptags }}</div>{% endif %}</div>
+    <div class="field"><label>Confirm password</label>
+      <input type="password" name="password2" required>
+      {% if form.password2.errors %}<div class="err">{{ form.password2.errors|striptags }}</div>{% endif %}</div>
+    <button class="btn btn-gold" style="width:100%">Create account</button>
+  </form>
+  <p class="muted mt-2 center">Already have an account? <a href="/login/">Sign in</a></p>
+</section>
+{% endblock %}

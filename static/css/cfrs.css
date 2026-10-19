@@ -1,0 +1,116 @@
+/* ============================================================
+   CFRS design system — grounded AgriTech identity
+   Field green anchor · harvest gold CTA · soil cream surface
+   ============================================================ */
+:root {
+  --green-900:#123322; --green-800:#1a4b30; --green-700:#22633f;
+  --green-600:#2d8a55; --green-100:#e4f2e9;
+  --gold-600:#c8871f; --gold-500:#e0a52e; --gold-100:#fbeecf;
+  --soil-50:#faf7f0; --soil-100:#f3ecdf; --soil-200:#e7dcc7;
+  --ink:#1c2b22; --muted:#5f6b62; --line:#ddd4c4;
+  --white:#ffffff; --danger:#b03a2e; --danger-bg:#fbe9e7;
+  --ok:#2d8a55; --ok-bg:#e4f2e9; --warn:#c8871f; --warn-bg:#fbeecf;
+  --radius:14px; --radius-sm:9px;
+  --shadow:0 1px 2px rgba(18,51,34,.06),0 6px 20px rgba(18,51,34,.06);
+  --maxw:1140px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--soil-50);
+  line-height:1.55;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:var(--green-700);text-decoration:none}
+a:hover{text-decoration:underline}
+img{max-width:100%;display:block}
+h1,h2,h3,h4{line-height:1.15;font-weight:750;letter-spacing:-.02em;color:var(--green-900)}
+h1{font-size:clamp(2rem,4.5vw,3.4rem)}
+h2{font-size:clamp(1.5rem,3vw,2.2rem)}
+h3{font-size:1.2rem}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+.muted{color:var(--muted)}
+
+/* nav */
+.nav{background:var(--green-900);color:#fff;position:sticky;top:0;z-index:40}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;color:#fff;font-size:1.15rem}
+.brand:hover{text-decoration:none}
+.brand .mark{width:30px;height:30px;border-radius:8px;background:var(--gold-500);
+  display:grid;place-items:center;color:var(--green-900);font-weight:900}
+.nav .links{display:flex;gap:6px;margin-left:auto;align-items:center}
+.nav .links a{color:#d8e6dd;padding:8px 14px;border-radius:8px;font-size:.94rem;font-weight:500}
+.nav .links a:hover{background:rgba(255,255,255,.08);color:#fff;text-decoration:none}
+.nav .links form{margin:0}
+.nav .links .linkbtn{background:none;border:0;cursor:pointer;font:inherit;color:#d8e6dd;padding:8px 14px;border-radius:8px;font-size:.94rem;font-weight:500}
+.nav .links .linkbtn:hover{background:rgba(255,255,255,.08);color:#fff}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:10px;
+  font-weight:650;font-size:.95rem;border:1.5px solid transparent;cursor:pointer;
+  transition:transform .04s ease,background .15s ease;font-family:inherit;line-height:1}
+.btn:hover{text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn-gold{background:var(--gold-500);color:var(--green-900)}
+.btn-gold:hover{background:var(--gold-600);color:var(--green-900)}
+.btn-green{background:var(--green-700);color:#fff}
+.btn-green:hover{background:var(--green-800);color:#fff}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn-ghost:hover{background:var(--soil-100)}
+.btn-sm{padding:7px 13px;font-size:.86rem}
+.btn:focus-visible{outline:3px solid var(--gold-500);outline-offset:2px}
+
+/* cards + surfaces */
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow)}
+.card-p{padding:22px}
+.grid{display:grid;gap:18px}
+.section{padding:64px 0}
+
+/* forms */
+.field{margin-bottom:16px}
+.field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:6px;color:var(--green-900)}
+.field input,.field select,.field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--line);
+  border-radius:10px;font-size:.96rem;font-family:inherit;background:#fff;color:var(--ink)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green-600);
+  box-shadow:0 0 0 3px var(--green-100)}
+.field .hint{font-size:.82rem;color:var(--muted);margin-top:5px}
+.field .err{font-size:.84rem;color:var(--danger);margin-top:5px}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;
+  font-size:.78rem;font-weight:650}
+.badge-ok{background:var(--ok-bg);color:var(--green-800)}
+.badge-warn{background:var(--warn-bg);color:var(--gold-600)}
+.badge-danger{background:var(--danger-bg);color:var(--danger)}
+.badge-muted{background:var(--soil-100);color:var(--muted)}
+
+/* stat tiles */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+.stat .n{font-size:2rem;font-weight:800;color:var(--green-800);letter-spacing:-.02em}
+.stat .l{font-size:.86rem;color:var(--muted);margin-top:2px}
+
+/* messages */
+.alert{padding:12px 16px;border-radius:10px;font-size:.92rem;margin-bottom:16px;border:1px solid transparent}
+.alert-ok{background:var(--ok-bg);color:var(--green-800);border-color:#bfe0cc}
+.alert-err{background:var(--danger-bg);color:var(--danger);border-color:#f1c4bd}
+
+/* tables */
+.table{width:100%;border-collapse:collapse;font-size:.92rem}
+.table th{text-align:left;padding:11px 14px;background:var(--soil-100);color:var(--green-900);
+  font-weight:650;font-size:.82rem;border-bottom:1px solid var(--line)}
+.table td{padding:11px 14px;border-bottom:1px solid var(--line)}
+.table tr:last-child td{border-bottom:none}
+
+footer.site{background:var(--green-900);color:#c6d7cc;padding:40px 0;margin-top:60px;font-size:.9rem}
+footer.site a{color:#fff}
+
+/* utilities */
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}.mt-4{margin-top:36px}
+.center{text-align:center}
+.hide{display:none}
+@media(max-width:720px){
+  .nav .links a.hide-m,.nav .links form.hide-m{display:none}
+  .section{padding:44px 0}
+}

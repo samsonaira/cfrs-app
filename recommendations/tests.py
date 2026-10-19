@@ -1,0 +1,136 @@
+"""ML pipeline and recommendation engine tests."""
+from django.test import TestCase
+import pandas as pd
+
+from ml.preprocessing.pipeline import clean, build_interactions
+from ml.recommendation.hybrid import hybrid_score, recommend_for_buyer, DEFAULT_WEIGHTS
+from ml.recommendation.preference import build_buyer_preferences
+
+
+def _sample_df():
+    return pd.DataFrame([
+        {"transaction_id": f"T{i}", "buyer_id": "B1", "farmer_id": "F1",
+         "produce_type": "Maize", "quantity": 100, "unit": "kg", "price": 45,
+         "location": "Kiambu", "transaction_date": "2023-01-01", "status": "COMPLETED"}
+        for i in range(5)
+    ] + [
+        {"transaction_id": "T99", "buyer_id": "B1", "farmer_id": "F2",
+         "produce_type": "Rice", "quantity": 50, "unit": "kg", "price": 120,
+         "location": "Kisumu", "transaction_date": "2023-02-01", "status": "COMPLETED"},
+    ])
+
+
+class PreprocessingTests(TestCase):
+    def test_clean_removes_cancelled_and_invalid(self):
+        df = _sample_df()
+        df.loc[len(df)] = {"transaction_id": "TX", "buyer_id": "B2",
+            "farmer_id": "F1", "produce_type": "Maize", "quantity": -5,
+            "unit": "kg", "price": 45, "location": "Kiambu",
+            "transaction_date": "2023-01-01", "status": "COMPLETED"}
+        clean_df, _ = clean(df)
+        self.assertTrue((clean_df["quantity"] > 0).all())
+
+    def test_interaction_matrix_built(self):
+        clean_df, _ = clean(_sample_df())
+        inter = build_interactions(clean_df)
+        # B1 interacted with F1 (5x) and F2 (1x)
+        self.assertEqual(len(inter), 2)
+        f1 = inter[inter.farmer_id == "F1"].iloc[0]
+        f2 = inter[inter.farmer_id == "F2"].iloc[0]
+        self.assertGreater(f1["rating"], f2["rating"])  # more freq = higher rating
+
+
+class HybridScoreTests(TestCase):
+    def test_weighted_formula(self):
+        # cf raw 5 -> normalised 1.0; produce 1.0; location 1.0 => 1.0
+        score, cf_norm = hybrid_score(5.0, 1.0, 1.0)
+        self.assertAlmostEqual(score, 1.0, places=3)
+        self.assertAlmostEqual(cf_norm, 1.0, places=3)
+
+    def test_weights_sum_to_one(self):
+        self.assertAlmostEqual(sum(DEFAULT_WEIGHTS.values()), 1.0, places=6)
+
+    def test_produce_component_contributes(self):
+        # cf neutral(1->0), only produce preference present
+        score, _ = hybrid_score(1.0, 1.0, 0.0)
+        self.assertAlmostEqual(score, DEFAULT_WEIGHTS["produce"], places=3)
+
+
+class ColdStartTests(TestCase):
+    def test_cold_start_mode_for_unknown_buyer(self):
+        clean_df, _ = clean(_sample_df())
+        prefs = build_buyer_preferences(clean_df)
+        listings = [{"listing_id": 1, "farmer_id": "F1", "produce_type": "Maize",
+                     "location": "Kiambu", "quantity": 100, "unit": "kg",
+                     "asking_price": 45, "farmer_name": "F1"}]
+        mode, recs = recommend_for_buyer("UNKNOWN", listings, prefs,
+                                         cf_algo=None, top_n=5)
+        self.assertEqual(mode, "COLD_START")
+        self.assertEqual(len(recs), 1)  # still returns, no crash
+
+    def test_hybrid_mode_for_known_buyer(self):
+        clean_df, _ = clean(_sample_df())
+        prefs = build_buyer_preferences(clean_df)
+        listings = [{"listing_id": 1, "farmer_id": "F1", "produce_type": "Maize",
+                     "location": "Kiambu", "quantity": 100, "unit": "kg",
+                     "asking_price": 45, "farmer_name": "F1"}]
+
+        class FakeAlgo:
+            def predict(self, u, i):
+                class P: est = 3.0
+                return P()
+        mode, recs = recommend_for_buyer("B1", listings, prefs,
+                                         cf_algo=FakeAlgo(), top_n=5)
+        self.assertEqual(mode, "HYBRID")
+        # B1 strongly prefers Maize/Kiambu -> produce & location score > 0
+        self.assertGreater(recs[0]["produce_score"], 0)
+        self.assertGreater(recs[0]["location_score"], 0)
+
+
+class ColdStartProfileFallbackTests(TestCase):
+    """A buyer with no history is ranked by their stated profile preferences."""
+
+    def setUp(self):
+        from users.models import Account, BuyerProfile
+        from marketplace.models import ProduceListing
+        farmer = Account.objects.create_user(
+            username="csf@t.ke", email="csf@t.ke", password="x", role="FARMER")
+        for produce, location in [("Tea", "Mombasa"), ("Maize", "Kiambu"),
+                                  ("Maize", "Nakuru"), ("Rice", "Kiambu")]:
+            ProduceListing.objects.create(
+                farmer=farmer, produce_name=produce, quantity=100,
+                asking_price=50, location=location, status="ACTIVE")
+        self.buyer = Account.objects.create_user(
+            username="csb@t.ke", email="csb@t.ke", password="x", role="BUYER")
+        self.profile = BuyerProfile.objects.create(
+            account=self.buyer, preferred_produce="maize, Beans",
+            preferred_location="kiambu")
+
+    def test_stated_preferences_rank_cold_start_results(self):
+        from recommendations.services import get_recommendations
+        mode, recs = get_recommendations(self.buyer, persist=False)
+        self.assertEqual(mode, "COLD_START")
+        ranked = [(r["produce_type"], r["location"], r["hybrid_score"]) for r in recs]
+        w = DEFAULT_WEIGHTS
+        self.assertEqual(ranked[0], ("Maize", "Kiambu",
+                                     round(w["produce"] + w["location"], 4)))
+        self.assertEqual(ranked[1], ("Maize", "Nakuru", w["produce"]))
+        self.assertEqual(ranked[2], ("Rice", "Kiambu", w["location"]))
+        self.assertEqual(ranked[3], ("Tea", "Mombasa", 0.0))
+        self.assertIn("Matches your preferred produce", recs[0]["reasons"])
+
+    def test_api_returns_nonzero_matches_for_new_buyer(self):
+        from django.test import Client
+        c = Client(); c.force_login(self.buyer)
+        data = c.get("/api/recommendations/").json()
+        self.assertEqual(data["recommendation_mode"], "COLD_START")
+        self.assertEqual(data["recommendations"][0]["match_percent"], 60)
+
+    def test_no_stated_preferences_still_returns_listings(self):
+        from recommendations.services import get_recommendations
+        self.profile.preferred_produce = ""
+        self.profile.preferred_location = ""
+        self.profile.save()
+        mode, recs = get_recommendations(self.buyer, persist=False)
+        self.assertEqual(mode, "COLD_START")
+        self.assertEqual(len(recs), 4)

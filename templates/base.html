@@ -1,0 +1,50 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}CFRS — Farmer & Buyer Marketplace{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;750;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/cfrs.css' %}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="/"><span class="mark">C</span> CFRS</a>
+    <div class="links">
+      <a href="/marketplace/">Marketplace</a>
+      {% if user.is_authenticated %}
+        <a href="/dashboard/">Dashboard</a>
+        <form method="post" action="/logout/" class="hide-m">{% csrf_token %}
+          <button type="submit" class="linkbtn">Sign out</button></form>
+      {% else %}
+        <a href="/login/">Sign in</a>
+        <a href="/register/" class="btn btn-gold btn-sm">Get started</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+{% if messages %}
+<div class="wrap mt-2">
+  {% for m in messages %}
+    <div class="alert {% if m.tags == 'error' %}alert-err{% else %}alert-ok{% endif %}">{{ m }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+<footer class="site">
+  <div class="wrap row between">
+    <div>CFRS — Collaborative Filtering Recommendation System<br>
+      <span style="opacity:.7">Final-year research project · synthetic demonstration data</span></div>
+    <div><a href="/marketplace/">Marketplace</a> · <a href="/login/">Sign in</a></div>
+  </div>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Farmer dashboard — CFRS{% endblock %}
+{% block content %}
+<section class="section wrap">
+  <div class="row between">
+    <div><h2>Hello, {{ user.first_name }}</h2>
+      <p class="muted mt-1">Manage your produce and buyer requests.</p></div>
+    <a href="/listings/new/" class="btn btn-gold">+ List produce</a>
+  </div>
+  <div class="stats mt-3">
+    <div class="stat"><div class="n">{{ active_count }}</div><div class="l">Active listings</div></div>
+    <div class="stat"><div class="n">{{ listings.count }}</div><div class="l">Total listings</div></div>
+    <div class="stat"><div class="n">{{ pending.count }}</div><div class="l">Pending requests</div></div>
+    <div class="stat"><div class="n">{{ completed_count }}</div><div class="l">Completed sales</div></div>
+  </div>
+
+  <h3 class="mt-4">Buyer requests</h3>
+  <div class="card mt-2" style="overflow:hidden">
+    <table class="table">
+      <thead><tr><th>Buyer</th><th>Produce</th><th>Qty</th><th>Total</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for t in pending %}
+        <tr><td>{{ t.buyer.get_full_name|default:t.buyer.username }}</td>
+          <td>{{ t.listing.produce_name|default:"—" }}</td><td>{{ t.quantity }}</td>
+          <td>KSh {{ t.total_amount }}</td>
+          <td>
+            <form method="post" action="{% url 'confirm_tx' t.pk %}" style="display:inline">
+              {% csrf_token %}<button class="btn btn-green btn-sm">Confirm</button></form>
+            <form method="post" action="{% url 'cancel_tx' t.pk %}" style="display:inline">
+              {% csrf_token %}<button class="btn btn-ghost btn-sm">Decline</button></form>
+          </td></tr>
+      {% empty %}
+        <tr><td colspan="5" class="muted center" style="padding:30px">No pending requests right now.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="mt-4">Your listings</h3>
+  <div class="grid mt-2" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+    {% for l in listings %}
+      <div class="card card-p">
+        <div class="row between"><strong>{{ l.produce_name }}</strong>
+          <span class="badge {% if l.status == 'ACTIVE' %}badge-ok{% else %}badge-muted{% endif %}">{{ l.get_status_display }}</span></div>
+        <div class="muted mt-1">{{ l.location }}</div>
+        <div class="mt-2"><strong>{{ l.quantity }} {{ l.unit }}</strong> · KSh {{ l.asking_price }}/kg</div>
+      </div>
+    {% empty %}
+      <div class="card card-p muted">No listings yet. Your first listing appears here.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

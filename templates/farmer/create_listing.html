@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}List produce — CFRS{% endblock %}
+{% block content %}
+<section class="section wrap" style="max-width:560px">
+  <a href="/dashboard/" class="muted">← Back to dashboard</a>
+  <h2 class="mt-2">List your produce</h2>
+  <p class="muted mt-1">Post what you have. We'll suggest a fair price from real
+    FAO Kenya market data.</p>
+
+  <form method="post" class="card card-p mt-3">
+    {% csrf_token %}
+    <div class="field"><label>Produce</label>
+      <select name="produce_name" id="produce" required>
+        <option value="">Choose produce…</option>
+        {% for p in produce_options %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+      </select></div>
+
+    <div id="priceHint" class="alert alert-ok hide" style="font-size:.9rem"></div>
+
+    <div class="row" style="gap:14px">
+      <div class="field" style="flex:1"><label>Quantity</label>
+        <input type="number" name="quantity" min="1" step="1" required placeholder="e.g. 500"></div>
+      <div class="field" style="width:110px"><label>Unit</label>
+        <select name="unit"><option>kg</option><option>tonne</option><option>crate</option><option>bag</option></select></div>
+    </div>
+
+    <div class="field"><label>Asking price (KES per unit)</label>
+      <input type="number" name="asking_price" id="askingPrice" min="1" step="0.01" required placeholder="Your price">
+      <div class="hint">Set your own price — the suggestion above is guidance, not a rule.</div></div>
+
+    <div class="field"><label>Location</label>
+      <input name="location" placeholder="e.g. Nakuru" value="{{ user.location }}"></div>
+
+    <div class="field"><label>Description <span class="muted">(optional)</span></label>
+      <textarea name="description" rows="3" placeholder="Grade, variety, harvest date…"></textarea></div>
+
+    <button class="btn btn-gold" style="width:100%">Create listing</button>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+const produce = document.getElementById('produce');
+const hint = document.getElementById('priceHint');
+const askingPrice = document.getElementById('askingPrice');
+produce.addEventListener('change', async () => {
+  const val = produce.value;
+  if (!val) { hint.classList.add('hide'); return; }
+  hint.classList.remove('hide');
+  hint.textContent = 'Checking market price…';
+  try {
+    const res = await fetch(`/api/price-estimate/?produce=${encodeURIComponent(val)}`);
+    const data = await res.json();
+    if (data.ok) {
+      hint.innerHTML = `Estimated fair price for <strong>${data.produce}</strong>: ` +
+        `<strong>KSh ${data.estimate}/kg</strong> — based on real FAO Kenya price data.`;
+      if (!askingPrice.value) askingPrice.value = data.estimate;
+    } else {
+      hint.textContent = data.message || 'No price estimate available for this produce.';
+    }
+  } catch(e) { hint.textContent = 'Could not load a price estimate right now.'; }
+});
+</script>
+{% endblock %}

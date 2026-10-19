@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+venv/
+env/
+.venv/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+
+# Environment / secrets
+.env
+*.pem
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Trained ML artifacts (regenerate with: python manage.py train_recommender)
+ml/models/*.pkl
+
+# Notes:
+# - db.sqlite3 is ignored; rebuild with migrate + seed_demo_data
+# - .pkl model files are ignored; regenerate with train_recommender
+# - FAO source CSVs in ml/data/ ARE tracked (small, needed to train)
+
+# Synthetic transactions are regenerable (python ml/data/generate_dataset.py)
+ml/data/transactions.csv
+.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+.env

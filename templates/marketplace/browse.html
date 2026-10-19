@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Marketplace — CFRS{% endblock %}
+{% block content %}
+<section class="section wrap">
+  <h2>Marketplace</h2>
+  <p class="muted mt-1">Browse active produce listings from farmers.</p>
+
+  <form method="get" class="card card-p mt-3" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:12px;align-items:end">
+    <div class="field" style="margin:0"><label>Search</label>
+      <input name="q" value="{{ q }}" placeholder="Produce, location or farmer"></div>
+    <div class="field" style="margin:0"><label>Produce</label>
+      <select name="produce"><option value="">All</option>
+        {% for p in produce_types %}<option {% if p == produce %}selected{% endif %}>{{ p }}</option>{% endfor %}
+      </select></div>
+    <div class="field" style="margin:0"><label>Location</label>
+      <select name="location"><option value="">All</option>
+        {% for l in locations %}<option {% if l == location %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select></div>
+    <div class="field" style="margin:0"><label>Sort</label>
+      <select name="sort">
+        <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+        <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Price: low to high</option>
+        <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: high to low</option>
+      </select></div>
+    <button class="btn btn-green">Apply</button>
+  </form>
+
+  <div class="grid mt-3" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+    {% for l in page %}
+      <div class="card card-p">
+        <div class="row between"><strong>{{ l.produce_name }}</strong>
+          <span class="badge badge-ok">Available</span></div>
+        <div class="muted mt-1">{{ l.location }} · {{ l.farmer.get_full_name|default:l.farmer.username }}</div>
+        <div class="mt-2"><strong>{{ l.quantity }} {{ l.unit }}</strong> · KSh {{ l.asking_price }}/kg</div>
+        <a href="/marketplace/{{ l.pk }}/" class="btn btn-ghost btn-sm mt-2" style="width:100%;justify-content:center">View details</a>
+      </div>
+    {% empty %}
+      <div class="card card-p muted">No listings match your search. Try clearing filters.</div>
+    {% endfor %}
+  </div>
+
+  {% if page.has_other_pages %}
+  <div class="row mt-3" style="justify-content:center">
+    {% if page.has_previous %}<a class="btn btn-ghost btn-sm" href="?page={{ page.previous_page_number }}">Previous</a>{% endif %}
+    <span class="muted">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a class="btn btn-ghost btn-sm" href="?page={{ page.next_page_number }}">Next</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,76 @@
+{
+  "dataset": {
+    "n_buyers": 200,
+    "n_farmers": 500,
+    "n_interactions": 5155,
+    "matrix_cells": 100000,
+    "density": 0.05155,
+    "sparsity": 0.94845
+  },
+  "hybrid_weights": {
+    "cf": 0.4,
+    "produce": 0.35,
+    "location": 0.25
+  },
+  "models": [
+    {
+      "model": "Popularity Baseline",
+      "rmse": 0.7389,
+      "mae": 0.5883,
+      "precision_at_5": 0.3483,
+      "recall_at_5": 0.6885,
+      "f1_at_5": 0.4626
+    },
+    {
+      "model": "User-Based CF",
+      "rmse": 0.7926,
+      "mae": 0.633,
+      "precision_at_5": 0.3551,
+      "recall_at_5": 0.6904,
+      "f1_at_5": 0.469
+    },
+    {
+      "model": "Item-Based CF",
+      "rmse": 0.7825,
+      "mae": 0.6291,
+      "precision_at_5": 0.3711,
+      "recall_at_5": 0.7061,
+      "f1_at_5": 0.4865
+    }
+  ],
+  "price_prediction": {
+    "model": "Price Prediction (Random Forest, FAO Kenya data)",
+    "data_source": "FAOSTAT Producer Prices \u2014 Kenya, 2010-2024 (real)",
+    "n_observations": 192,
+    "produce_types": 18,
+    "cv_mae_kes": 12.528,
+    "cv_rmse_kes": 19.283,
+    "mean_price_kes": 63.73,
+    "mae_pct_of_mean": 19.7
+  },
+  "demand_forecasting": {
+    "model": "Demand Forecasting (Gradient Boosting, FAO Kenya production)",
+    "data_source": "FAOSTAT Production \u2014 Kenya, 2010-2024 (real)",
+    "n_observations": 168,
+    "produce_types": 12,
+    "cv_mae_tonnes": 124692.8,
+    "cv_rmse_tonnes": 205162.4,
+    "mean_production_tonnes": 689121.6,
+    "mae_pct_of_mean": 18.1,
+    "scope": "National annual production trend (not per-county/month)"
+  },
+  "fraud_detection": {
+    "model": "Fraud Detection (Isolation Forest)",
+    "n_transactions": 13857,
+    "n_flagged_for_review": 416,
+    "flagged_pct": 3.0,
+    "contamination": 0.03,
+    "features": [
+      "amount",
+      "quantity",
+      "price",
+      "price_deviation",
+      "buyer_freq"
+    ]
+  }
+}

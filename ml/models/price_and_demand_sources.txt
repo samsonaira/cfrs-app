@@ -1,0 +1,21 @@
+DATA PROVENANCE — real data used for the ML modules
+====================================================
+
+Price prediction:
+  Source: FAOSTAT Producer Prices (domain PP), Area = Kenya
+  File: ml/data/fao_kenya_prices.csv
+  Real official annual producer prices, 2010-2024, 18 crops, USD/tonne
+  Converted to KES/kg for marketplace realism (1 USD approx 130 KES)
+
+Demand forecasting:
+  Source: FAOSTAT Crops and livestock products (domain QCL), Area = Kenya
+  File: ml/data/fao_kenya_production.csv
+  Real official annual production quantities, 2010-2024, 12 crops, tonnes
+
+Fraud detection:
+  Operates on transaction structure (synthetic transaction dataset).
+  No fabricated fraud labels — anomalies detected statistically.
+
+Collaborative filtering:
+  Synthetic buyer-farmer transaction dataset (no public real equivalent
+  exists). Clearly labelled as synthetic throughout.
