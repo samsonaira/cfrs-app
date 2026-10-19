@@ -9,6 +9,7 @@ The seeded buyers' usernames match their dataset IDs so the trained
 preference model aligns with the ORM accounts.
 """
 import os
+import secrets
 import pandas as pd
 import joblib
 
@@ -20,7 +21,10 @@ from users.models import Account, FarmerProfile, BuyerProfile
 from marketplace.models import ProduceListing, Transaction
 
 
-DEMO_PASSWORD = "demo12345"
+# Password for the low-privilege demo farmer/buyer fixtures only. Overridable
+# via env for anyone who wants a different one; these accounts hold no
+# privileges, so a shared demo password is acceptable for them.
+DEMO_PASSWORD = os.environ.get("CFRS_DEMO_PASSWORD", "demo12345")
 BASE_PRICE = {
     "Maize": 45, "Rice": 120, "Beans": 110, "Wheat": 50, "Tomatoes": 80,
     "Potatoes": 40, "Onions": 70, "Avocado": 30, "Coffee": 500, "Tea": 400,
@@ -126,11 +130,26 @@ class Command(BaseCommand):
             f"(+{created_b} new)"
             f"\n  Active lists: {ProduceListing.objects.filter(status='ACTIVE').count()}"
             f"\n  Transactions: {Transaction.objects.count()} (+{tx_created} new)"))
-        self.stdout.write("\nDemo accounts (password: %s):" % DEMO_PASSWORD)
-        self.stdout.write("  demo_farmer@cfrs.ke / demo_buyer@cfrs.ke / demo_admin@cfrs.ke")
+        self.stdout.write("\nDemo logins (non-privileged, password: %s):" % DEMO_PASSWORD)
+        self.stdout.write("  demo_farmer@cfrs.ke / demo_buyer@cfrs.ke")
+        if self.admin_password:
+            self.stdout.write(self.style.WARNING(
+                "\nAdmin superuser demo_admin@cfrs.ke password (%s):" % self.admin_password_source))
+            self.stdout.write(self.style.WARNING("  %s" % self.admin_password))
+            self.stdout.write("  Record it now — it is not stored anywhere and not printed again.")
+        else:
+            self.stdout.write("\nAdmin superuser demo_admin@cfrs.ke already existed; password unchanged.")
 
     def _demo_accounts(self):
-        """Create the three named demo accounts."""
+        """Create the three named demo accounts.
+
+        The administrator is a superuser, so it never gets the shared demo
+        password. It uses CFRS_ADMIN_PASSWORD if set, otherwise a fresh random
+        password generated here and printed once at the end of the run — it is
+        never hard-coded or published.
+        """
+        self.admin_password = None       # shown once if we create the admin
+        self.admin_password_source = None
         specs = [
             ("demo_farmer", "demo_farmer@cfrs.ke", "FARMER"),
             ("demo_buyer", "demo_buyer@cfrs.ke", "BUYER"),
@@ -143,10 +162,16 @@ class Command(BaseCommand):
                               first_name=username.replace("demo_", "Demo ").title()),
             )
             if made:
-                acct.set_password(DEMO_PASSWORD)
                 if role == "ADMINISTRATOR":
+                    env_pw = os.environ.get("CFRS_ADMIN_PASSWORD")
+                    self.admin_password = env_pw or secrets.token_urlsafe(12)
+                    self.admin_password_source = "env CFRS_ADMIN_PASSWORD" if env_pw \
+                        else "randomly generated (shown once below)"
+                    acct.set_password(self.admin_password)
                     acct.is_staff = True
                     acct.is_superuser = True
+                else:
+                    acct.set_password(DEMO_PASSWORD)
                 acct.save()
             if role == "FARMER":
                 FarmerProfile.objects.get_or_create(

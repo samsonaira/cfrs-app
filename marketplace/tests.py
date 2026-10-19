@@ -253,3 +253,31 @@ class EvaluationVerdictTests(TestCase):
         tpl = (settings.BASE_DIR / "templates" / "dashboard_admin" / "ml_analytics.html").read_text()
         self.assertNotIn("outperform the", tpl)
         self.assertIn("eval_summary.sentence", tpl)
+
+
+class DemoCredentialsTests(TestCase):
+    """Item 6: the admin superuser must not share the published demo password."""
+
+    def test_admin_superuser_not_given_shared_demo_password(self):
+        from marketplace.management.commands.seed_demo_data import Command, DEMO_PASSWORD
+        cmd = Command()
+        cmd._demo_accounts()
+        admin = Account.objects.get(username="demo_admin")
+        self.assertTrue(admin.is_superuser)
+        self.assertFalse(admin.check_password(DEMO_PASSWORD))
+        self.assertTrue(admin.check_password(cmd.admin_password))
+        self.assertGreaterEqual(len(cmd.admin_password), 12)
+        # low-privilege demo logins still use the shared demo password
+        self.assertTrue(Account.objects.get(username="demo_buyer").check_password(DEMO_PASSWORD))
+
+    def test_admin_password_from_env_when_set(self):
+        import os
+        os.environ["CFRS_ADMIN_PASSWORD"] = "env-set-admin-pw-123"
+        try:
+            from marketplace.management.commands.seed_demo_data import Command
+            cmd = Command()
+            cmd._demo_accounts()
+            self.assertTrue(Account.objects.get(username="demo_admin")
+                            .check_password("env-set-admin-pw-123"))
+        finally:
+            del os.environ["CFRS_ADMIN_PASSWORD"]

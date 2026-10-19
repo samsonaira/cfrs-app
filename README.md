@@ -21,10 +21,16 @@ python manage.py seed_demo_data          # farmers, buyers, listings, transactio
 python manage.py runserver
 ```
 
-## Demo accounts (password: demo12345)
+## Demo accounts
+Non-privileged demo logins (shared password `demo12345`, override with the
+`CFRS_DEMO_PASSWORD` env var):
 - demo_farmer@cfrs.ke — Farmer dashboard
 - demo_buyer@cfrs.ke — Buyer dashboard + recommendations
-- demo_admin@cfrs.ke — Admin dashboard + ML analytics
+
+The admin superuser **demo_admin@cfrs.ke** is *not* given the shared password.
+`seed_demo_data` sets it from `CFRS_ADMIN_PASSWORD` if provided, otherwise
+generates a random one and prints it **once** at the end of the run. Record it
+then — it is never stored or published.
 
 ## Hybrid recommendation
 `Hybrid = 0.40·CF + 0.35·Produce + 0.25·Location` (weights configurable in ml/recommendation/hybrid.py)
