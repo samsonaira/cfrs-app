@@ -91,6 +91,10 @@ owning farmer can confirm.
 
 ## Known limitations
 - Synthetic development data only (clearly labelled; not real market data)
+- Recommendations for real platform buyers are driven by their own completed
+  transactions in the database (keyed by account); collaborative-filtering
+  *similarity* between buyers is still trained on the synthetic dataset, so
+  cross-buyer CF does not yet learn from live activity
 - Price prediction / demand forecasting / fraud detection: architecture
   present as documented extension points, not fabricated (per academic-integrity
   requirement — no results shown without a real trained model)

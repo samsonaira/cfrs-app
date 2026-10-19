@@ -67,6 +67,35 @@ def _profile_preferences(buyer_account):
     return {"produce": produce, "location": {location: 1.0} if location else {}}
 
 
+def _db_transaction_preferences(buyer_account):
+    """
+    Preference scores built from the buyer's OWN completed transactions in the
+    database, keyed by their account, in the same shape as
+    build_buyer_preferences(). This is what lets real in-app purchases influence
+    a buyer's recommendations (rather than only the synthetic training data).
+    Returns None if the buyer has no completed transactions.
+    """
+    from marketplace.models import Transaction
+    txns = (Transaction.objects
+            .filter(buyer=buyer_account, status=Transaction.Status.COMPLETED)
+            .select_related("listing"))
+    produce, location, total = {}, {}, 0
+    for t in txns:
+        if not t.listing:
+            continue
+        p = t.listing.produce_name.title()
+        loc = t.listing.location.title()
+        produce[p] = produce.get(p, 0) + 1
+        location[loc] = location.get(loc, 0) + 1
+        total += 1
+    if total == 0:
+        return None
+    return {
+        "produce": {k: v / total for k, v in produce.items()},
+        "location": {k: v / total for k, v in location.items()},
+    }
+
+
 def get_recommendations(buyer_account, top_n=10, weights=None, persist=False):
     """
     Returns (mode, recommendations[]) where each recommendation is backed
@@ -101,18 +130,31 @@ def get_recommendations(buyer_account, top_n=10, weights=None, persist=False):
     # 2. Run the ML hybrid engine over ONLY currently-active listings.
     #    Because we score active listings directly, every recommendation
     #    returned is guaranteed to correspond to real current availability.
-    prefs, cf_algo = art["prefs"], art["ub_algo"]
-    if not prefs.get(buyer_id, {}).get("produce"):
-        # No transaction history in the trained model: cold start. Fall back
-        # to the buyer's stated produce/location preferences so matches are
-        # still ranked. cf_algo=None keeps the engine in COLD_START mode.
-        stated = _profile_preferences(buyer_account)
-        if stated:
-            prefs, cf_algo = {buyer_id: stated}, None
+    #
+    #    Preference source, in priority order:
+    #      a) the trained collaborative-filtering model, for buyers present in
+    #         it (seeded/known buyers)  -> full HYBRID (CF + preferences);
+    #      b) the buyer's OWN completed transactions in the DB, keyed by account
+    #         -> real in-app purchases drive ranking (mode HISTORY);
+    #      c) the buyer's stated profile preferences -> COLD_START.
+    trained = art["prefs"]
+    mode_override = None
+    if trained.get(buyer_id, {}).get("produce"):
+        prefs, cf_algo = trained, art["ub_algo"]
+    else:
+        db_prefs = _db_transaction_preferences(buyer_account)
+        if db_prefs:
+            prefs, cf_algo = {buyer_id: db_prefs}, None
+            mode_override = "HISTORY"
+        else:
+            stated = _profile_preferences(buyer_account)
+            prefs, cf_algo = ({buyer_id: stated} if stated else trained), None
     mode, recs = recommend_for_buyer(
         buyer_id, active_listings, prefs,
         cf_algo=cf_algo, weights=weights, top_n=top_n,
     )
+    if mode_override and recs:
+        mode = mode_override
 
     # 3. Optionally persist the latest snapshot for the analytics/audit trail.
     #    persist is False by default: a GET must not write. When a buyer

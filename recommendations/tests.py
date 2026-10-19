@@ -194,3 +194,56 @@ class RecommendationWriteSafetyTests(TestCase):
         resp = c.post(f"/api/recommendations/{self.buyer.username}/")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(self._count(), 0)
+
+
+class RealActivityInfluencesRecsTests(TestCase):
+    """Item 2: a buyer's real completed purchases (DB, keyed by account) drive recs."""
+
+    def setUp(self):
+        from users.models import Account
+        from marketplace.models import ProduceListing
+        self.farmer = Account.objects.create_user(
+            username="ra_f@t.ke", email="ra_f@t.ke", password="x", role="FARMER")
+        self.maize = ProduceListing.objects.create(
+            farmer=self.farmer, produce_name="Maize", quantity=100,
+            asking_price=45, location="Kiambu", status="ACTIVE")
+        ProduceListing.objects.create(
+            farmer=self.farmer, produce_name="Tea", quantity=100,
+            asking_price=400, location="Mombasa", status="ACTIVE")
+        # A real platform buyer (email username, not in the synthetic model)
+        self.buyer = Account.objects.create_user(
+            username="ra_b@t.ke", email="ra_b@t.ke", password="x", role="BUYER")
+
+    def _complete_a_maize_purchase(self):
+        from marketplace.services.transaction_service import (
+            create_transaction, confirm_transaction)
+        tx = create_transaction(self.buyer, self.maize.pk, 10)
+        confirm_transaction(self.farmer, tx.pk)
+
+    def test_db_preferences_keyed_by_account(self):
+        from recommendations.services import _db_transaction_preferences
+        self.assertIsNone(_db_transaction_preferences(self.buyer))   # no history yet
+        self._complete_a_maize_purchase()
+        prefs = _db_transaction_preferences(self.buyer)
+        self.assertEqual(prefs["produce"], {"Maize": 1.0})
+        self.assertEqual(prefs["location"], {"Kiambu": 1.0})
+
+    def test_completed_purchase_drives_recommendations(self):
+        from recommendations.services import get_recommendations
+        # before any purchase: not HISTORY (no real activity to use)
+        mode0, _ = get_recommendations(self.buyer, persist=False)
+        self.assertNotEqual(mode0, "HISTORY")
+        # after a real Maize purchase, recs are driven by that history
+        self._complete_a_maize_purchase()
+        mode, recs = get_recommendations(self.buyer, persist=False)
+        self.assertEqual(mode, "HISTORY")
+        self.assertEqual(recs[0]["produce_type"], "Maize")
+        self.assertGreater(recs[0]["hybrid_score"], 0)
+
+    def test_other_buyers_history_does_not_leak(self):
+        from users.models import Account
+        from recommendations.services import _db_transaction_preferences
+        self._complete_a_maize_purchase()
+        other = Account.objects.create_user(
+            username="ra_b2@t.ke", email="ra_b2@t.ke", password="x", role="BUYER")
+        self.assertIsNone(_db_transaction_preferences(other))  # keyed by account
