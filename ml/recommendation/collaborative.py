@@ -90,8 +90,7 @@ def popularity_baseline(interactions, test_size=0.2, seed=42):
 
 
 if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    # Run from the project root with: python -m ml.recommendation.collaborative
     from ml.preprocessing.pipeline import run
 
     _, interactions, stats = run(verbose=False)

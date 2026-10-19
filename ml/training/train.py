@@ -13,8 +13,6 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 
 
 def train_all(verbose=True):
-    import sys
-    sys.path.insert(0, os.path.dirname(BASE))
     from ml.preprocessing.pipeline import run
     from ml.recommendation.preference import build_buyer_preferences
     from ml.recommendation.collaborative import (

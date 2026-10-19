@@ -31,8 +31,7 @@ def location_score(prefs, buyer_id, location):
 
 
 if __name__ == "__main__":
-    import sys, os
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    # Run from the project root with: python -m ml.recommendation.preference
     from ml.preprocessing.pipeline import run
     clean_df, _, _ = run(verbose=False)
     prefs = build_buyer_preferences(clean_df)

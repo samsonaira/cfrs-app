@@ -13,11 +13,10 @@ import joblib
 from django.conf import settings
 from marketplace.models import ProduceListing, RecommendationRecord
 
-# ML engine imports (engine is Django-independent)
-import sys
+# ML engine imports (engine is Django-independent; the project root is on
+# sys.path under manage.py, and ml/ is a proper package, so a plain import works)
 ML_BASE = os.path.join(settings.BASE_DIR, "ml")
-sys.path.insert(0, str(settings.BASE_DIR))
-from ml.recommendation.hybrid import recommend_for_buyer  # noqa: E402
+from ml.recommendation.hybrid import recommend_for_buyer
 
 MODELS_DIR = os.path.join(ML_BASE, "models")
 

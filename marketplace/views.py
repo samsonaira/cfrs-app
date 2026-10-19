@@ -215,9 +215,6 @@ def cancel_tx(request, tx_id):
 from decimal import Decimal, InvalidOperation
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
-import sys as _sys
-from django.conf import settings as _settings
-_sys.path.insert(0, str(_settings.BASE_DIR))
 
 
 @login_required
@@ -287,9 +284,6 @@ def price_estimate(request):
 
 def _flag_transactions(limit=100):
     """Score recent transactions with the trained fraud model; return flagged ones."""
-    import sys
-    from django.conf import settings as _s
-    sys.path.insert(0, str(_s.BASE_DIR))
     try:
         from ml.recommendation.fraud_detection import score_transaction
     except Exception:

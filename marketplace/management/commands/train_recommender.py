@@ -14,9 +14,6 @@ class Command(BaseCommand):
     help = "Train and evaluate the recommendation models, saving artifacts."
 
     def handle(self, *args, **options):
-        import sys, os
-        from django.conf import settings
-        sys.path.insert(0, str(settings.BASE_DIR))
         from ml.training.train import train_all
 
         self.stdout.write("Training CFRS recommendation models...")

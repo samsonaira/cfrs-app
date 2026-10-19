@@ -15,8 +15,6 @@ from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import joblib
 
-import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from ml.preprocessing.fao_prices import load_clean
 
 MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models")

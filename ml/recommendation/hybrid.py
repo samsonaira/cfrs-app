@@ -83,8 +83,7 @@ def recommend_for_buyer(buyer_id, active_listings, prefs, cf_algo=None,
 
 
 if __name__ == "__main__":
-    import sys, os
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    # Run from the project root with: python -m ml.recommendation.hybrid
     from ml.preprocessing.pipeline import run
     from ml.recommendation.preference import build_buyer_preferences
     from ml.recommendation.collaborative import train_user_based
