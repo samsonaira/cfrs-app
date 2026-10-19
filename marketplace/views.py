@@ -254,12 +254,12 @@ def create_listing(request):
             messages.error(request, msg)
             return redirect("create_listing")
 
-    # produce options that the price model actually knows
-    from ml.recommendation.price_prediction import load_clean as _price_data
-    try:
-        produce_options = sorted(_price_data()["produce"].unique().tolist())
-    except Exception:
-        produce_options = ["Maize", "Rice", "Beans", "Potatoes", "Tomatoes", "Wheat"]
+    # The dropdown reflects the crops the marketplace supports (same set the
+    # seed data and recommender use), not only the crops the FAO price model
+    # covers. For crops without price history the estimate endpoint returns
+    # "No price history", which is expected.
+    from marketplace.constants import SUPPORTED_PRODUCE
+    produce_options = sorted(SUPPORTED_PRODUCE)
     return render(request, "farmer/create_listing.html",
                   {"produce_options": produce_options})
 

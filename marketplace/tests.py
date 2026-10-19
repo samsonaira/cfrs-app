@@ -357,3 +357,21 @@ class PendingReservationTests(TestCase):
         cancel_transaction(self.b1, t1.pk)
         tx = create_transaction(self.b2, self.listing.pk, Decimal("10"))
         self.assertEqual(tx.status, Transaction.Status.PENDING)
+
+
+class ProduceScopeTests(TestCase):
+    """Item 3: the listing dropdown matches the marketplace's crop set."""
+
+    def test_supported_produce_matches_generator(self):
+        from marketplace.constants import SUPPORTED_PRODUCE
+        from ml.data.generate_dataset import PRODUCE
+        self.assertEqual(SUPPORTED_PRODUCE, PRODUCE)
+
+    def test_create_listing_dropdown_includes_marketplace_crops(self):
+        from django.urls import reverse
+        farmer = Account.objects.create_user(
+            username="ps_f@t.ke", email="ps_f@t.ke", password="x", role="FARMER")
+        c = Client(); c.force_login(farmer)
+        html = c.get(reverse("create_listing")).content.decode()
+        for crop in ["Maize", "Onions", "Coffee", "Kales"]:
+            self.assertIn(crop, html, f"{crop} missing from the listing dropdown")
