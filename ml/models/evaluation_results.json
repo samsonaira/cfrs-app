@@ -48,6 +48,33 @@
     "mean_price_kes": 63.73,
     "mae_pct_of_mean": 19.7
   },
+  "price_prediction_monthly": {
+    "model": "Price Prediction (Random Forest, WFP monthly market data)",
+    "data_source": "World Bank/WFP Real-Time Food Prices \u2014 Kenya, monthly, 233 markets, 2007-2026 (real)",
+    "crops_covered": [
+      "Beans",
+      "Maize"
+    ],
+    "n_observations": 4869,
+    "n_markets": 49,
+    "cv_mae_kes": 4.549,
+    "mean_price_kes": 71.94,
+    "mae_pct_of_mean": 6.3,
+    "per_crop": {
+      "Beans": {
+        "mae_kes": 7.11,
+        "mean_price_kes": 111.54,
+        "mae_pct_of_mean": 6.4,
+        "n_obs": 1824
+      },
+      "Maize": {
+        "mae_kes": 2.9,
+        "mean_price_kes": 48.22,
+        "mae_pct_of_mean": 6.0,
+        "n_obs": 3045
+      }
+    }
+  },
   "demand_forecasting": {
     "model": "Demand Forecasting (Gradient Boosting, FAO Kenya production)",
     "data_source": "FAOSTAT Production \u2014 Kenya, 2010-2024 (real)",

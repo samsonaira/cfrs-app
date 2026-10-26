@@ -45,17 +45,19 @@ def train_all(verbose=True):
     prefs = build_buyer_preferences(clean_df)
 
     # --- Additional ML modules (real / legitimately-synthetic data) ---
-    from ml.recommendation.price_prediction import train_price_model
+    from ml.recommendation.price_prediction import train_price_model, train_price_model_monthly
     from ml.recommendation.demand_forecast import train_demand_model
     from ml.recommendation.fraud_detection import train_fraud_model
     import pandas as _pd
 
     price_res = train_price_model(verbose=False)
+    price_monthly_res = train_price_model_monthly(verbose=False)
     demand_res = train_demand_model(verbose=False)
     _txdf = clean_df.rename(columns={})  # already has needed cols
     fraud_res = train_fraud_model(_txdf, verbose=False)
 
     results["price_prediction"] = price_res
+    results["price_prediction_monthly"] = price_monthly_res
     results["demand_forecasting"] = demand_res
     results["fraud_detection"] = fraud_res
 
