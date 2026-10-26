@@ -1,82 +1,197 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}CFRS — Connecting farmers with the right buyers{% endblock %}
 {% block head %}
 <style>
-.hero{background:linear-gradient(160deg,var(--green-900),var(--green-700));color:#fff;
-  padding:76px 0 84px;position:relative;overflow:hidden}
-.hero h1{color:#fff;max-width:14ch}
-.hero .lede{font-size:1.18rem;color:#d8e6dd;max-width:52ch;margin-top:18px}
-.hero .cta{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap}
-.match{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
-  border-radius:16px;padding:20px;margin-top:44px;max-width:560px;backdrop-filter:blur(4px)}
-.match .r{display:flex;align-items:center;gap:14px;padding:10px 0}
-.match .who{font-weight:700;color:#fff}
-.match .arrow{color:var(--gold-500);font-weight:800;font-size:1.3rem}
-.match .pill{margin-left:auto;background:var(--gold-500);color:var(--green-900);
-  font-weight:800;padding:4px 12px;border-radius:20px;font-size:.82rem}
-.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:34px}
-.how .step .k{width:34px;height:34px;border-radius:9px;background:var(--green-100);
-  color:var(--green-800);font-weight:800;display:grid;place-items:center;margin-bottom:12px}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-@media(max-width:720px){.split{grid-template-columns:1fr}}
+/* ===== Dark premium landing (scoped to .lp so the app theme is untouched) ===== */
+.lp{--lime:#a8e63a;--lime-600:#8fce24;--d0:#06160e;--d1:#0b2114;--d2:#102b1b;
+  --card:rgba(255,255,255,.04);--card-br:rgba(255,255,255,.09);
+  --tx:#e9f1ea;--tx-mut:#9fb3a5;
+  background:var(--d0);color:var(--tx);overflow:hidden}
+.lp a{color:var(--lime)}
+.lp .wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+.lp h1,.lp h2,.lp h3,.lp h4{color:#fff;letter-spacing:-.02em;line-height:1.1}
+.lp h1{font-size:clamp(2.3rem,5.4vw,4rem);font-weight:800}
+.lp h2{font-size:clamp(1.7rem,3.3vw,2.5rem);font-weight:800}
+.lp .mut{color:var(--tx-mut)}
+.lp .pill{display:inline-flex;align-items:center;gap:8px;padding:7px 15px;border-radius:999px;
+  background:var(--card);border:1px solid var(--card-br);font-size:.82rem;font-weight:600;color:#cfe8b4}
+.lp .pill .d{width:7px;height:7px;border-radius:50%;background:var(--lime)}
+.lp .btn-lime{display:inline-flex;align-items:center;gap:9px;background:var(--lime);color:#0a1f0a;
+  font-weight:750;padding:13px 24px;border-radius:999px;border:0;cursor:pointer;
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
+.lp .btn-lime:hover{background:var(--lime-600);transform:translateY(-2px);box-shadow:0 10px 30px rgba(168,230,58,.3);text-decoration:none}
+.lp .btn-out{display:inline-flex;align-items:center;gap:9px;background:transparent;color:#fff;
+  font-weight:650;padding:13px 24px;border-radius:999px;border:1.5px solid rgba(255,255,255,.22);
+  transition:all .18s ease}
+.lp .btn-out:hover{border-color:var(--lime);color:var(--lime);text-decoration:none}
+
+/* hero */
+.lp .hero{position:relative;padding:clamp(56px,8vw,92px) 0 clamp(48px,7vw,80px);
+  background:
+    linear-gradient(90deg,rgba(6,22,14,.96) 0%,rgba(6,22,14,.80) 42%,rgba(6,22,14,.35) 100%),
+    linear-gradient(180deg,rgba(6,22,14,.5),rgba(6,22,14,.85)),
+    url('{% static "img/hero.jpg" %}') center/cover no-repeat, var(--d1)}
+.lp .hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:40px;align-items:center}
+@media(max-width:900px){.lp .hero-grid{grid-template-columns:1fr}}
+.lp .hero h1 .lime{color:var(--lime);display:block}
+.lp .lede{font-size:clamp(1rem,1.5vw,1.15rem);color:#cdddd1;max-width:48ch;margin-top:20px}
+.lp .hero-cta{margin-top:30px;display:flex;gap:14px;flex-wrap:wrap}
+.lp .insight{background:var(--card);border:1px solid var(--card-br);border-radius:20px;padding:20px;
+  backdrop-filter:blur(8px);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.lp .insight .ih{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.lp .insight .ih b{font-size:.9rem;color:#fff}
+.lp .insight .ih a{font-size:.78rem}
+.lp .irow{display:flex;align-items:center;gap:10px;padding:13px 0;border-top:1px solid rgba(255,255,255,.08);font-size:.9rem}
+.lp .irow:first-of-type{border-top:0}
+.lp .irow .who{color:#dfeada;font-weight:600}
+.lp .irow .ar{color:var(--lime);font-weight:800}
+.lp .irow .pct{margin-left:auto;background:rgba(168,230,58,.16);color:var(--lime);font-weight:750;
+  padding:3px 11px;border-radius:999px;font-size:.8rem}
+
+/* stat band */
+.lp .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:46px;
+  background:var(--card);border:1px solid var(--card-br);border-radius:18px;overflow:hidden}
+@media(max-width:720px){.lp .stats{grid-template-columns:repeat(2,1fr)}}
+.lp .stat{padding:22px 24px;background:transparent;border:0;border-radius:0;box-shadow:none;
+  border-right:1px solid rgba(255,255,255,.07)}
+.lp .stat:last-child{border-right:0}
+.lp .stat .n{font-size:1.7rem;font-weight:800;color:#fff}
+.lp .stat .l{font-size:.82rem;color:var(--tx-mut);margin-top:2px}
+
+/* sections */
+.lp section{padding:clamp(54px,8vw,90px) 0}
+.lp .ey{color:var(--lime);font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase}
+.lp .feat{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:36px}
+@media(max-width:980px){.lp .feat{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.lp .feat{grid-template-columns:1fr}}
+.lp .fcard{background:var(--card);border:1px solid var(--card-br);border-radius:18px;padding:24px;
+  transition:transform .2s ease,border-color .2s ease,background .2s ease}
+.lp .fcard:hover{transform:translateY(-5px);border-color:rgba(168,230,58,.4);background:rgba(255,255,255,.06)}
+.lp .fic{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;margin-bottom:16px;
+  background:rgba(168,230,58,.14);color:var(--lime)}
+.lp .fcard h4{font-size:1.08rem;margin-bottom:8px}
+.lp .fcard p{color:var(--tx-mut);font-size:.9rem;line-height:1.55}
+.lp .split{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
+@media(max-width:860px){.lp .split{grid-template-columns:1fr}}
+.lp .check{display:flex;gap:10px;align-items:center;margin-top:12px;color:#dbe8dd;font-size:.95rem}
+.lp .check .c{width:22px;height:22px;border-radius:50%;background:rgba(168,230,58,.16);color:var(--lime);
+  display:grid;place-items:center;flex:none}
+.lp .preview{background:var(--d2);border:1px solid var(--card-br);border-radius:20px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.lp .pv-row{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:rgba(255,255,255,.03);margin-top:12px}
+.lp .pv-row .ava{width:40px;height:40px;border-radius:10px;background:rgba(168,230,58,.15);color:var(--lime);display:grid;place-items:center;font-weight:800;flex:none}
+.lp .pv-row .meta b{color:#fff;font-size:.95rem}.lp .pv-row .meta div{color:var(--tx-mut);font-size:.82rem}
+.lp .pv-row .pct{margin-left:auto;background:var(--lime);color:#0a1f0a;font-weight:800;padding:4px 12px;border-radius:999px;font-size:.82rem}
+.lp .cta-band{background:linear-gradient(120deg,var(--d2),#17431f);border:1px solid var(--card-br);
+  border-radius:24px;padding:clamp(30px,5vw,52px);display:flex;justify-content:space-between;
+  align-items:center;gap:24px;flex-wrap:wrap}
+.lp .cta-band h2{max-width:18ch}
 </style>
 {% endblock %}
 {% block content %}
-<header class="hero">
-  <div class="wrap">
-    <h1>Connecting farmers with the right buyers.</h1>
-    <p class="lede">An intelligent agricultural marketplace that learns from purchasing
-      behaviour, produce preferences and location to match buyers with the farmers
-      who actually suit them.</p>
-    <div class="cta">
-      <a href="/register/?role=BUYER" class="btn btn-gold">Join as a buyer</a>
-      <a href="/register/?role=FARMER" class="btn btn-green" style="border-color:rgba(255,255,255,.25)">Join as a farmer</a>
-      <a href="/marketplace/" class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3)">Browse produce</a>
+<div class="lp">
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="pill"><span class="d"></span>Smart matching for farmers &amp; buyers</span>
+        <h1 class="mt-2">Connecting farms<span class="lime">to the right buyers.</span></h1>
+        <p class="lede">CFRS learns from purchasing behaviour, produce preferences and location to
+          match buyers with the farmers who actually suit them — and gives farmers fair-price
+          guidance from real market data.</p>
+        <div class="hero-cta">
+          <a href="/marketplace/" class="btn-lime">Explore the marketplace →</a>
+          <a href="/register/?role=FARMER" class="btn-out">Join as a farmer</a>
+        </div>
+      </div>
+
+      <div class="insight" aria-label="Example buyer recommendations">
+        <div class="ih"><b>A buyer's top matches</b><a href="/register/?role=BUYER">Get yours →</a></div>
+        <div class="irow"><span class="who">Bananas · Eldoret</span><span class="ar">→</span><span>Farmer F0489</span><span class="pct">58%</span></div>
+        <div class="irow"><span class="who">Bananas · Eldoret</span><span class="ar">→</span><span>Farmer F0159</span><span class="pct">56%</span></div>
+        <div class="irow"><span class="who">Avocado · Eldoret</span><span class="ar">→</span><span>Farmer F0230</span><span class="pct">46%</span></div>
+      </div>
     </div>
 
-    <div class="match" aria-label="Example recommendation">
-      <div class="muted" style="color:#c6d7cc;font-size:.85rem;font-weight:600">A buyer's top matches</div>
-      <div class="r"><span class="who">Bananas · Eldoret</span><span class="arrow">→</span>
-        <span>Farmer F0489</span><span class="pill">58% match</span></div>
-      <div class="r"><span class="who">Bananas · Eldoret</span><span class="arrow">→</span>
-        <span>Farmer F0159</span><span class="pill">56% match</span></div>
-      <div class="r"><span class="who">Avocado · Eldoret</span><span class="arrow">→</span>
-        <span>Farmer F0230</span><span class="pill">46% match</span></div>
+    <div class="wrap">
+      <div class="stats">
+        <div class="stat"><div class="n">14</div><div class="l">Produce categories</div></div>
+        <div class="stat"><div class="n">15</div><div class="l">Counties covered</div></div>
+        <div class="stat"><div class="n">Fair-price</div><div class="l">Market-data guidance</div></div>
+        <div class="stat"><div class="n">Direct</div><div class="l">Farmer-to-buyer trade</div></div>
+      </div>
     </div>
-  </div>
-</header>
+  </header>
 
-<section class="section wrap">
-  <h2>How it works</h2>
-  <div class="how">
-    <div class="step"><div class="k">1</div><h3>Farmers list produce</h3>
-      <p class="muted">Farmers post what they have — produce, quantity, price and location —
-        and receive a fair-price suggestion.</p></div>
-    <div class="step"><div class="k">2</div><h3>Buyers request matches</h3>
-      <p class="muted">Buyers ask for recommendations. The engine ranks farmers by
-        purchasing history, produce fit and location.</p></div>
-    <div class="step"><div class="k">3</div><h3>They trade directly</h3>
-      <p class="muted">Buyers start a transaction, the farmer confirms, and both keep
-        a clear record — no intermediary in between.</p></div>
-  </div>
-</section>
+  <section>
+    <div class="wrap">
+      <span class="ey">What CFRS does</span>
+      <h2 class="mt-2">Intelligent matching for every trade</h2>
+      <p class="mut mt-2" style="max-width:56ch">From discovery to a confirmed deal — CFRS helps buyers
+        find reliable farmers and helps farmers reach the buyers who want their produce.</p>
+      <div class="feat">
+        <div class="fcard">
+          <div class="fic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <h4>Smart matching</h4>
+          <p>A collaborative-filtering engine ranks farmers by purchasing history, produce fit and location.</p>
+        </div>
+        <div class="fcard">
+          <div class="fic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <h4>Fair-price guidance</h4>
+          <p>Price suggestions trained on real market data, so farmers list at sensible prices.</p>
+        </div>
+        <div class="fcard">
+          <div class="fic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-2 8h12"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg></div>
+          <h4>Direct trade</h4>
+          <p>Buyers start a transaction, farmers confirm, and both keep a clear record — no middleman.</p>
+        </div>
+        <div class="fcard">
+          <div class="fic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></div>
+          <h4>Market insights</h4>
+          <p>Admins see live platform activity and model analytics, built from real database figures.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<section class="section" style="background:var(--soil-100)">
-  <div class="wrap split">
-    <div class="card card-p">
-      <span class="badge badge-ok">For farmers</span>
-      <h3 class="mt-2">Reach buyers who want what you grow</h3>
-      <p class="muted mt-1">List produce in minutes, get a data-driven price guide from
-        historical market data, and see demand for your crop before you harvest.</p>
-      <a href="/register/?role=FARMER" class="btn btn-green mt-3">Start selling</a>
+  <section style="background:var(--d1)">
+    <div class="wrap split">
+      <div>
+        <span class="ey">How the matching works</span>
+        <h2 class="mt-2">Data-driven, and only ever real listings</h2>
+        <p class="mut mt-2">The engine scores farmers for each buyer, then filters every result against
+          current availability — so a recommendation always points to produce you can actually buy today.</p>
+        <div class="check"><span class="c">✓</span> Learns from completed transactions</div>
+        <div class="check"><span class="c">✓</span> Produce &amp; location preference matching</div>
+        <div class="check"><span class="c">✓</span> Sensible cold-start for brand-new buyers</div>
+        <div class="check"><span class="c">✓</span> Never recommends sold-out produce</div>
+        <a href="/register/?role=BUYER" class="btn-lime mt-3" style="margin-top:24px">Get recommendations →</a>
+      </div>
+      <div class="preview">
+        <div class="ih" style="display:flex;justify-content:space-between;align-items:center">
+          <b style="color:#fff">Recommended for you</b><span class="pill"><span class="d"></span>Live</span>
+        </div>
+        <div class="pv-row"><div class="ava">F</div><div class="meta"><b>Farmer F0489 · Bananas</b><div>Eldoret · KSh 35/kg · 500 kg</div></div><span class="pct">58%</span></div>
+        <div class="pv-row"><div class="ava">F</div><div class="meta"><b>Farmer F0230 · Avocado</b><div>Eldoret · KSh 30/kg · 500 kg</div></div><span class="pct">46%</span></div>
+        <div class="pv-row"><div class="ava">F</div><div class="meta"><b>Farmer F0176 · Mangoes</b><div>Kisumu · KSh 60/kg · 500 kg</div></div><span class="pct">41%</span></div>
+      </div>
     </div>
-    <div class="card card-p">
-      <span class="badge badge-warn">For buyers</span>
-      <h3 class="mt-2">Find reliable farmers, ranked for you</h3>
-      <p class="muted mt-1">Skip endless searching. Get a ranked shortlist of farmers
-        matched to your buying patterns, preferred produce and region.</p>
-      <a href="/register/?role=BUYER" class="btn btn-gold mt-3">Get recommendations</a>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="cta-band">
+        <div>
+          <span class="ey">Get started free</span>
+          <h2 class="mt-2">Together, let's connect farms to markets.</h2>
+        </div>
+        <div class="hero-cta">
+          <a href="/register/?role=BUYER" class="btn-lime">Join as a buyer</a>
+          <a href="/register/?role=FARMER" class="btn-out">Join as a farmer</a>
+        </div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+
+</div>
 {% endblock %}

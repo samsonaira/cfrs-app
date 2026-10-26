@@ -1,53 +1,100 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Farmer dashboard — CFRS{% endblock %}
 {% block content %}
-<section class="section wrap">
-  <div class="row between">
-    <div><h2>Hello, {{ user.first_name }}</h2>
-      <p class="muted mt-1">Manage your produce and buyer requests.</p></div>
-    <a href="/listings/new/" class="btn btn-gold">+ List produce</a>
-  </div>
-  <div class="stats mt-3">
-    <div class="stat"><div class="n">{{ active_count }}</div><div class="l">Active listings</div></div>
-    <div class="stat"><div class="n">{{ listings.count }}</div><div class="l">Total listings</div></div>
-    <div class="stat"><div class="n">{{ pending.count }}</div><div class="l">Pending requests</div></div>
-    <div class="stat"><div class="n">{{ completed_count }}</div><div class="l">Completed sales</div></div>
-  </div>
+<div class="shell">
+  <aside class="sidebar" id="dashSidebar">
+    <div class="s-label">Farmer</div>
+    <a href="/dashboard/" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</a>
+    <a href="/listings/new/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add produce</a>
+    <a href="/marketplace/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18l-1 11H4L3 9zM8 9V6a4 4 0 0 1 8 0v3"/></svg>Marketplace</a>
+    <div class="s-label mt-3">Account</div>
+    <form method="post" action="/logout/" class="logout">{% csrf_token %}<button type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button></form>
+  </aside>
 
-  <h3 class="mt-4">Buyer requests</h3>
-  <div class="card mt-2" style="overflow:hidden">
-    <table class="table">
-      <thead><tr><th>Buyer</th><th>Produce</th><th>Qty</th><th>Total</th><th>Status</th></tr></thead>
-      <tbody>
-      {% for t in pending %}
-        <tr><td>{{ t.buyer.get_full_name|default:t.buyer.username }}</td>
-          <td>{{ t.listing.produce_name|default:"—" }}</td><td>{{ t.quantity }}</td>
-          <td>KSh {{ t.total_amount }}</td>
-          <td>
-            <form method="post" action="{% url 'confirm_tx' t.pk %}" style="display:inline">
-              {% csrf_token %}<button class="btn btn-green btn-sm">Confirm</button></form>
-            <form method="post" action="{% url 'cancel_tx' t.pk %}" style="display:inline">
-              {% csrf_token %}<button class="btn btn-ghost btn-sm">Decline</button></form>
-          </td></tr>
-      {% empty %}
-        <tr><td colspan="5" class="muted center" style="padding:30px">No pending requests right now.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <h3 class="mt-4">Your listings</h3>
-  <div class="grid mt-2" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
-    {% for l in listings %}
-      <div class="card card-p">
-        <div class="row between"><strong>{{ l.produce_name }}</strong>
-          <span class="badge {% if l.status == 'ACTIVE' %}badge-ok{% else %}badge-muted{% endif %}">{{ l.get_status_display }}</span></div>
-        <div class="muted mt-1">{{ l.location }}</div>
-        <div class="mt-2"><strong>{{ l.quantity }} {{ l.unit }}</strong> · KSh {{ l.asking_price }}/kg</div>
+  <div class="shell-main">
+    <div class="page-head">
+      <div>
+        <h2 class="mb-0">Hello, {{ user.first_name|default:user.username }}</h2>
+        <p class="muted mt-1 mb-0">Manage your produce and buyer requests.</p>
       </div>
-    {% empty %}
-      <div class="card card-p muted">No listings yet. Your first listing appears here.</div>
-    {% endfor %}
+      <div class="row gap-sm">
+        <button class="btn btn-ghost btn-sm dash-menu" id="dashMenu" aria-label="Sections">☰ Sections</button>
+        <a href="/listings/new/" class="btn btn-gold">+ List produce</a>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat card-hover"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="n">{{ active_count }}</div><div class="l">Active listings</div></div>
+      <div class="stat card-hover"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg></div>
+        <div class="n">{{ listings.count }}</div><div class="l">Total listings</div></div>
+      <div class="stat card-hover"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div class="n">{{ pending.count }}</div><div class="l">Pending requests</div></div>
+      <div class="stat card-hover"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="n">{{ completed_count }}</div><div class="l">Completed sales</div></div>
+    </div>
+
+    <h3 class="mt-4">Buyer requests</h3>
+    <div class="card mt-2 table-wrap">
+      <table class="table">
+        <thead><tr><th>Buyer</th><th>Produce</th><th>Qty</th><th>Total</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for t in pending %}
+          <tr><td>{{ t.buyer.get_full_name|default:t.buyer.username }}</td>
+            <td>{{ t.listing.produce_name|default:"—" }}</td><td>{{ t.quantity }}</td>
+            <td><strong>KSh {{ t.total_amount }}</strong></td>
+            <td>
+              <div class="row gap-sm">
+                <form method="post" action="{% url 'confirm_tx' t.pk %}">{% csrf_token %}<button class="btn btn-green btn-sm">Confirm</button></form>
+                <form method="post" action="{% url 'cancel_tx' t.pk %}">{% csrf_token %}<button class="btn btn-ghost btn-sm">Decline</button></form>
+              </div>
+            </td></tr>
+        {% empty %}
+          <tr><td colspan="5">
+            <div class="empty" style="padding:30px 10px">
+              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div>
+              <h3>No pending requests</h3><p class="muted">New buyer requests will appear here.</p>
+            </div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="mt-4">Your listings</h3>
+    <div class="mk-grid mt-2">
+      {% for l in listings %}
+        <div class="p-card">
+          <div class="p-img" style="aspect-ratio:16/10">
+            {% include "partials/produce_img.html" with name=l.produce_name alt=l.produce_name %}
+            <span class="badge {% if l.status == 'ACTIVE' %}badge-ok{% else %}badge-muted{% endif %} p-badge">{{ l.get_status_display }}</span>
+          </div>
+          <div class="card-p">
+            <div class="p-name">{{ l.produce_name }}</div>
+            <div class="p-meta">{{ l.location }}</div>
+            <div class="row between mt-2" style="align-items:baseline">
+              <div class="p-price">KSh {{ l.asking_price }}<span>/{{ l.unit }}</span></div>
+              <div class="muted" style="font-size:.84rem">{{ l.quantity }} {{ l.unit }}</div>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="empty" style="grid-column:1/-1">
+          <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18l-1 11H4L3 9zM8 9V6a4 4 0 0 1 8 0v3"/></svg></div>
+          <h3>No listings yet</h3><p class="muted">List your first produce to start receiving buyer requests.</p>
+          <a href="/listings/new/" class="btn btn-gold mt-3">+ List produce</a>
+        </div>
+      {% endfor %}
+    </div>
   </div>
-</section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){var m=document.getElementById('dashMenu'),s=document.getElementById('dashSidebar');
+ if(m&&s)m.addEventListener('click',function(){s.classList.toggle('open');});
+ document.querySelectorAll('form[action*="confirm"],form[action*="cancel"]').forEach(function(f){
+   f.addEventListener('submit',function(){var b=f.querySelector('button');if(b){b.classList.add('is-loading');b.disabled=true;}});});
+})();
+</script>
 {% endblock %}

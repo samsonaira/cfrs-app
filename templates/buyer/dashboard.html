@@ -1,94 +1,122 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Buyer dashboard — CFRS{% endblock %}
 {% block content %}
-<section class="section wrap">
-  <div class="row between">
-    <div><h2>Hello, {{ user.first_name }}</h2>
-      <p class="muted mt-1">Find farmers matched to how you buy.</p></div>
-    <a href="/marketplace/" class="btn btn-ghost">Browse marketplace</a>
-  </div>
+<div class="shell">
+  <aside class="sidebar" id="dashSidebar">
+    <div class="s-label">Buyer</div>
+    <a href="/dashboard/" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</a>
+    <a href="/marketplace/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18l-1 11H4L3 9zM8 9V6a4 4 0 0 1 8 0v3"/></svg>Marketplace</a>
+    <div class="s-label mt-3">Account</div>
+    <form method="post" action="/logout/" class="logout">{% csrf_token %}<button type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button></form>
+  </aside>
 
-  <div class="stats mt-3">
-    <div class="stat"><div class="n">{{ tx_count }}</div><div class="l">Your transactions</div></div>
-    <div class="stat"><div class="n">{{ profile.preferred_produce|default:"—" }}</div><div class="l">Preferred produce</div></div>
-    <div class="stat"><div class="n">{{ profile.preferred_location|default:"—" }}</div><div class="l">Preferred location</div></div>
-  </div>
-
-  <div class="card card-p mt-4">
-    <div class="row between">
-      <div><h3>Your farmer recommendations</h3>
-        <p class="muted mt-1">Ranked by purchasing behaviour, produce fit and location.</p></div>
-      <button id="getRecs" class="btn btn-gold">Get recommendations</button>
+  <div class="shell-main">
+    <div class="page-head">
+      <div>
+        <h2 class="mb-0">Hello, {{ user.first_name|default:user.username }}</h2>
+        <p class="muted mt-1 mb-0">Find farmers matched to how you buy.</p>
+      </div>
+      <div class="row gap-sm">
+        <button class="btn btn-ghost btn-sm dash-menu" id="dashMenu" aria-label="Sections">☰ Sections</button>
+        <a href="/marketplace/" class="btn btn-ghost">Browse marketplace</a>
+      </div>
     </div>
-    <div id="recStatus" class="muted mt-2 hide"></div>
-    <div id="recResults" class="grid mt-3" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))"></div>
-  </div>
 
-  <h3 class="mt-4">Recent transactions</h3>
-  <div class="card mt-2" style="overflow:hidden">
-    <table class="table">
-      <thead><tr><th>Farmer</th><th>Produce</th><th>Qty</th><th>Total</th><th>Status</th></tr></thead>
-      <tbody>
-      {% for t in transactions %}
-        <tr><td>{{ t.farmer.get_full_name|default:t.farmer.username }}</td>
-          <td>{{ t.listing.produce_name|default:"—" }}</td>
-          <td>{{ t.quantity }}</td><td>KSh {{ t.total_amount }}</td>
-          <td><span class="badge {% if t.status == 'COMPLETED' %}badge-ok{% elif t.status == 'PENDING' %}badge-warn{% else %}badge-muted{% endif %}">{{ t.get_status_display }}</span></td></tr>
-      {% empty %}
-        <tr><td colspan="5" class="muted center" style="padding:30px">No transactions yet. Get recommendations to start.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    <div class="stats">
+      <div class="stat card-hover"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3M17 13l2.3 2.3"/><circle cx="9" cy="19" r="1.5"/><circle cx="18" cy="19" r="1.5"/></svg></div>
+        <div class="n">{{ tx_count }}</div><div class="l">Your transactions</div></div>
+      <div class="stat card-hover"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
+        <div class="n" style="font-size:1.3rem">{{ profile.preferred_produce|default:"—" }}</div><div class="l">Preferred produce</div></div>
+      <div class="stat card-hover"><div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
+        <div class="n" style="font-size:1.3rem">{{ profile.preferred_location|default:"—" }}</div><div class="l">Preferred location</div></div>
+    </div>
+
+    <div class="card card-p mt-4">
+      <div class="page-head" style="margin-bottom:0">
+        <div><h3 class="mb-0">Your farmer recommendations</h3>
+          <p class="muted mt-1 mb-0">Ranked by purchasing behaviour, produce fit and location.</p></div>
+        <button id="getRecs" class="btn btn-gold">Get recommendations</button>
+      </div>
+      <div id="recStatus" class="muted mt-3 hide"></div>
+      <div id="recResults" class="mk-grid mt-3"></div>
+    </div>
+
+    <h3 class="mt-4">Recent transactions</h3>
+    <div class="card mt-2 table-wrap">
+      <table class="table">
+        <thead><tr><th>Farmer</th><th>Produce</th><th>Qty</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for t in transactions %}
+          <tr><td>{{ t.farmer.get_full_name|default:t.farmer.username }}</td>
+            <td>{{ t.listing.produce_name|default:"—" }}</td>
+            <td>{{ t.quantity }}</td><td><strong>KSh {{ t.total_amount }}</strong></td>
+            <td><span class="badge {% if t.status == 'COMPLETED' %}badge-ok{% elif t.status == 'PENDING' %}badge-warn{% else %}badge-muted{% endif %}"><span class="dot"></span>{{ t.get_status_display }}</span></td></tr>
+        {% empty %}
+          <tr><td colspan="5">
+            <div class="empty" style="padding:30px 10px">
+              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4"/><circle cx="9" cy="19" r="1.5"/><circle cx="18" cy="19" r="1.5"/></svg></div>
+              <h3>No transactions yet</h3><p class="muted">Get recommendations above, then start a transaction from a listing.</p>
+            </div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-</section>
+</div>
 {% endblock %}
 {% block scripts %}
 <script>
-const btn = document.getElementById('getRecs');
-const status = document.getElementById('recStatus');
-const results = document.getElementById('recResults');
-// Build nodes with textContent so names coming from other users are never parsed as HTML.
-function el(tag, cls, text) {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text !== undefined) n.textContent = text;
-  return n;
+const IMG_BASE = "{% static 'img/produce/' %}";
+const CSRF = "{{ csrf_token }}";
+// Build cards with the DOM API + textContent so farmer/produce/location names
+// typed by other users can never inject markup (no innerHTML of user data).
+function el(tag, cls, text){ const e=document.createElement(tag); if(cls)e.className=cls; if(text!=null)e.textContent=text; return e; }
+function recImg(name){
+  const n=String(name||'').toLowerCase().replace(/\s+/g,'');
+  const img=document.createElement('img'); img.loading='lazy'; img.alt=name||'';
+  img.src=IMG_BASE+n+'.jpg'; img.dataset.svg=IMG_BASE+n+'.svg'; img.dataset.def=IMG_BASE+'default.svg';
+  img.onerror=function(){ if(!this.dataset.s){this.dataset.s=1;this.src=this.dataset.svg;}
+    else if(!this.dataset.d){this.dataset.d=1;this.src=this.dataset.def;} else {this.onerror=null;} };
+  return img;
 }
-function recCard(r) {
-  const card = el('div', 'card card-p');
-  const head = el('div', 'row between');
-  head.append(el('strong', '', r.farmer_name), el('span', 'badge badge-ok', `${r.match_percent}% match`));
-  const qty = el('div', 'mt-2');
-  qty.append(el('strong', '', `${r.quantity} ${r.unit}`), ` · KSh ${r.asking_price}/kg`);
-  const reasons = el('ul', 'muted mt-2');
-  reasons.style.cssText = 'font-size:.85rem;padding-left:18px';
-  r.reasons.forEach(x => reasons.append(el('li', '', x)));
-  const link = el('a', 'btn btn-green btn-sm mt-2', 'View produce');
-  link.href = `/marketplace/${encodeURIComponent(r.listing_id)}/`;
-  link.style.cssText = 'width:100%;justify-content:center';
-  card.append(head, el('div', 'muted mt-1', `${r.produce_type} · ${r.location}`), qty, reasons, link);
-  return card;
+function recCard(r){
+  const a=el('a','p-card'); a.href='/marketplace/'+encodeURIComponent(r.listing_id)+'/';
+  const imgWrap=el('div','p-img'); imgWrap.appendChild(recImg(r.produce_type));
+  imgWrap.appendChild(el('span','badge badge-rec p-badge', r.match_percent+'% match'));
+  a.appendChild(imgWrap);
+  const body=el('div','card-p');
+  body.appendChild(el('div','p-name', r.farmer_name));
+  body.appendChild(el('div','p-meta', r.produce_type+' · '+r.location));
+  const row=el('div','row between mt-2'); row.style.alignItems='baseline';
+  const price=el('div','p-price','KSh '+r.asking_price); price.appendChild(el('span',null,'/'+r.unit));
+  const qty=el('div','muted', r.quantity+' '+r.unit); qty.style.fontSize='.84rem';
+  row.appendChild(price); row.appendChild(qty); body.appendChild(row);
+  const ul=el('ul','muted mt-2'); ul.style.cssText='font-size:.83rem;padding-left:18px;margin-bottom:0';
+  (r.reasons||[]).forEach(x=>ul.appendChild(el('li',null,x))); body.appendChild(ul);
+  const v=el('div','mt-2'); v.appendChild(el('span','p-view','View produce →')); body.appendChild(v);
+  a.appendChild(body); return a;
 }
+(function(){var m=document.getElementById('dashMenu'),s=document.getElementById('dashSidebar');
+ if(m&&s)m.addEventListener('click',function(){s.classList.toggle('open');});})();
+
+const btn=document.getElementById('getRecs'),statusEl=document.getElementById('recStatus'),results=document.getElementById('recResults');
 btn.addEventListener('click', async () => {
-  btn.disabled = true; btn.textContent = 'Finding matches…';
-  status.classList.remove('hide');
-  status.textContent = 'Finding the best farmer matches for you…';
-  results.innerHTML = '';
-  try {
-    const res = await fetch('/api/recommendations/', {
-      method: 'POST',
-      headers: {'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}'},
-    });
-    const data = await res.json();
-    if (!data.success || data.count === 0) {
-      status.textContent = 'No matches yet — try browsing the marketplace to build your history.';
-    } else {
-      status.textContent = `${data.count} matches · mode: ${data.recommendation_mode}`;
+  btn.classList.add('is-loading'); btn.disabled=true;
+  statusEl.classList.remove('hide'); statusEl.textContent='Finding the best farmer matches for you…';
+  results.replaceChildren();
+  try{
+    const res=await fetch('/api/recommendations/',{method:'POST',
+      headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken':CSRF}});
+    const data=await res.json();
+    if(!data.success||data.count===0){
+      statusEl.textContent='No matches yet — browse the marketplace and make a purchase to build your history.';
+    }else{
+      statusEl.textContent=data.count+' matches · mode: '+data.recommendation_mode;
       results.replaceChildren(...data.recommendations.map(recCard));
     }
-  } catch(e) {
-    status.textContent = 'Something went wrong generating recommendations. Please try again.';
-  } finally { btn.disabled = false; btn.textContent = 'Get recommendations'; }
+  }catch(e){ statusEl.textContent='Something went wrong generating recommendations. Please try again.'; }
+  finally{ btn.classList.remove('is-loading'); btn.disabled=false; }
 });
 </script>
 {% endblock %}

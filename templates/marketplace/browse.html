@@ -1,23 +1,29 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Marketplace — CFRS{% endblock %}
 {% block content %}
 <section class="section wrap">
-  <h2>Marketplace</h2>
-  <p class="muted mt-1">Browse active produce listings from farmers.</p>
+  <span class="eyebrow">Marketplace</span>
+  <div class="page-head mt-1">
+    <div>
+      <h2 class="mb-0">Browse fresh produce</h2>
+      <p class="muted mt-1 mb-0">{{ page.paginator.count }} active listing{{ page.paginator.count|pluralize }} from farmers across Kenya.</p>
+    </div>
+  </div>
 
-  <form method="get" class="card card-p mt-3" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:12px;align-items:end">
-    <div class="field" style="margin:0"><label>Search</label>
-      <input name="q" value="{{ q }}" placeholder="Produce, location or farmer"></div>
-    <div class="field" style="margin:0"><label>Produce</label>
-      <select name="produce"><option value="">All</option>
+  <form method="get" class="card card-p toolbar" aria-label="Filter listings">
+    <div class="field" style="margin:0"><label for="q">Search</label>
+      <input id="q" name="q" value="{{ q }}" placeholder="Produce, location or farmer"></div>
+    <div class="field" style="margin:0"><label for="produce">Produce</label>
+      <select id="produce" name="produce"><option value="">All produce</option>
         {% for p in produce_types %}<option {% if p == produce %}selected{% endif %}>{{ p }}</option>{% endfor %}
       </select></div>
-    <div class="field" style="margin:0"><label>Location</label>
-      <select name="location"><option value="">All</option>
+    <div class="field" style="margin:0"><label for="location">Location</label>
+      <select id="location" name="location"><option value="">All locations</option>
         {% for l in locations %}<option {% if l == location %}selected{% endif %}>{{ l }}</option>{% endfor %}
       </select></div>
-    <div class="field" style="margin:0"><label>Sort</label>
-      <select name="sort">
+    <div class="field" style="margin:0"><label for="sort">Sort</label>
+      <select id="sort" name="sort">
         <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
         <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Price: low to high</option>
         <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: high to low</option>
@@ -25,25 +31,49 @@
     <button class="btn btn-green">Apply</button>
   </form>
 
-  <div class="grid mt-3" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+  {% if q or produce or location %}
+  <div class="row mt-2" style="gap:8px">
+    <span class="muted" style="font-size:.86rem">Filters:</span>
+    {% if q %}<span class="chip active">“{{ q }}”</span>{% endif %}
+    {% if produce %}<span class="chip active">{{ produce }}</span>{% endif %}
+    {% if location %}<span class="chip active">{{ location }}</span>{% endif %}
+    <a href="/marketplace/" class="chip">Clear all ✕</a>
+  </div>
+  {% endif %}
+
+  <div class="mk-grid mt-3">
     {% for l in page %}
-      <div class="card card-p">
-        <div class="row between"><strong>{{ l.produce_name }}</strong>
-          <span class="badge badge-ok">Available</span></div>
-        <div class="muted mt-1">{{ l.location }} · {{ l.farmer.get_full_name|default:l.farmer.username }}</div>
-        <div class="mt-2"><strong>{{ l.quantity }} {{ l.unit }}</strong> · KSh {{ l.asking_price }}/kg</div>
-        <a href="/marketplace/{{ l.pk }}/" class="btn btn-ghost btn-sm mt-2" style="width:100%;justify-content:center">View details</a>
-      </div>
+      <a class="p-card" href="/marketplace/{{ l.pk }}/" aria-label="View {{ l.produce_name }} from {{ l.farmer.get_full_name|default:l.farmer.username }}">
+        <div class="p-img">
+          {% include "partials/produce_img.html" with name=l.produce_name alt=l.produce_name %}
+          {% if l.is_active %}<span class="badge badge-ok p-badge"><span class="dot"></span>Available</span>
+          {% else %}<span class="badge badge-muted p-badge">{{ l.get_status_display }}</span>{% endif %}
+        </div>
+        <div class="card-p">
+          <div class="p-name">{{ l.produce_name }}</div>
+          <div class="p-meta">{{ l.location }} · {{ l.farmer.get_full_name|default:l.farmer.username }}</div>
+          <div class="row between mt-2" style="align-items:baseline">
+            <div class="p-price">KSh {{ l.asking_price }}<span>/{{ l.unit }}</span></div>
+            <div class="muted" style="font-size:.84rem">{{ l.quantity }} {{ l.unit }}</div>
+          </div>
+          <div class="p-reveal"><span class="p-view">View details →</span></div>
+        </div>
+      </a>
     {% empty %}
-      <div class="card card-p muted">No listings match your search. Try clearing filters.</div>
+      <div class="empty" style="grid-column:1/-1">
+        <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+        <h3>No listings match your search</h3>
+        <p class="muted">Try a different produce or location, or clear your filters.</p>
+        <a href="/marketplace/" class="btn btn-ghost mt-3">Clear filters</a>
+      </div>
     {% endfor %}
   </div>
 
   {% if page.has_other_pages %}
-  <div class="row mt-3" style="justify-content:center">
-    {% if page.has_previous %}<a class="btn btn-ghost btn-sm" href="?page={{ page.previous_page_number }}">Previous</a>{% endif %}
+  <div class="row mt-4" style="justify-content:center">
+    {% if page.has_previous %}<a class="btn btn-ghost btn-sm" href="?page={{ page.previous_page_number }}&q={{ q }}&produce={{ produce }}&location={{ location }}&sort={{ sort }}">← Previous</a>{% endif %}
     <span class="muted">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
-    {% if page.has_next %}<a class="btn btn-ghost btn-sm" href="?page={{ page.next_page_number }}">Next</a>{% endif %}
+    {% if page.has_next %}<a class="btn btn-ghost btn-sm" href="?page={{ page.next_page_number }}&q={{ q }}&produce={{ produce }}&location={{ location }}&sort={{ sort }}">Next →</a>{% endif %}
   </div>
   {% endif %}
 </section>

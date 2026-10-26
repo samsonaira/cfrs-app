@@ -1,35 +1,59 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{{ listing.produce_name }} — CFRS{% endblock %}
 {% block content %}
-<section class="section wrap" style="max-width:640px">
+<section class="section wrap">
   <a href="/marketplace/" class="muted">← Back to marketplace</a>
-  <div class="card card-p mt-2">
-    <div class="row between"><h2>{{ listing.produce_name }}</h2>
-      <span class="badge {% if listing.is_active %}badge-ok{% else %}badge-muted{% endif %}">{{ listing.get_status_display }}</span></div>
-    <div class="muted mt-1">{{ listing.location }}</div>
-    <div class="stats mt-3">
-      <div class="stat"><div class="n">{{ listing.quantity }}</div><div class="l">{{ listing.unit }} available</div></div>
-      <div class="stat"><div class="n">KSh {{ listing.asking_price }}</div><div class="l">per {{ listing.unit }}</div></div>
+
+  <div class="detail-grid mt-3">
+    <div class="card" style="overflow:hidden">
+      <div class="p-img p-img-lg">
+        {% include "partials/produce_img.html" with name=listing.produce_name alt=listing.produce_name %}
+        {% if listing.is_active %}<span class="badge badge-ok p-badge-l"><span class="dot"></span>Available</span>
+        {% else %}<span class="badge badge-muted p-badge-l">{{ listing.get_status_display }}</span>{% endif %}
+      </div>
     </div>
-    <h3 class="mt-3">Farmer</h3>
-    <p class="mt-1">{{ listing.farmer.get_full_name|default:listing.farmer.username }} · {{ listing.location }}</p>
-    {% if listing.description %}<p class="muted mt-2">{{ listing.description }}</p>{% endif %}
-    {% if user.is_buyer and listing.is_active %}
-      <form method="post" action="{% url 'start_transaction' listing.pk %}" class="mt-3">
-        {% csrf_token %}
-        <div class="field" style="max-width:200px">
-          <label>Quantity ({{ listing.unit }})</label>
-          <input type="number" name="quantity" min="1" max="{{ listing.quantity }}"
-                 value="1" step="1" required>
-          <div class="hint">Up to {{ listing.quantity }} {{ listing.unit }} available</div>
-        </div>
-        <button class="btn btn-gold">Start transaction</button>
-      </form>
-    {% elif user.is_farmer %}
-      <p class="muted mt-3">Farmers cannot purchase listings.</p>
-    {% elif not user.is_authenticated %}
-      <a href="/login/" class="btn btn-gold mt-3">Sign in to buy</a>
-    {% endif %}
+
+    <div>
+      <h2 class="mb-0">{{ listing.produce_name }}</h2>
+      <div class="p-meta" style="font-size:.95rem">{{ listing.location }}</div>
+
+      <div class="stats mt-3" style="grid-template-columns:1fr 1fr">
+        <div class="stat"><div class="n">{{ listing.quantity }}</div><div class="l">{{ listing.unit }} available</div></div>
+        <div class="stat"><div class="n">KSh {{ listing.asking_price }}</div><div class="l">per {{ listing.unit }}</div></div>
+      </div>
+
+      <div class="card card-p mt-3">
+        <h4>Farmer</h4>
+        <p class="mt-1 mb-0">{{ listing.farmer.get_full_name|default:listing.farmer.username }} · {{ listing.location }}</p>
+        {% if listing.description %}<p class="muted mt-2 mb-0">{{ listing.description }}</p>{% endif %}
+      </div>
+
+      {% if user.is_buyer and listing.is_active %}
+        <form method="post" action="{% url 'start_transaction' listing.pk %}" class="card card-p mt-3" id="buyForm">
+          {% csrf_token %}
+          <h4>Request this produce</h4>
+          <div class="field mt-2" style="max-width:220px">
+            <label for="quantity">Quantity ({{ listing.unit }})</label>
+            <input id="quantity" type="number" name="quantity" min="1" max="{{ listing.quantity }}"
+                   value="1" step="1" required>
+            <div class="hint">Up to {{ listing.quantity }} {{ listing.unit }} available</div>
+          </div>
+          <button class="btn btn-gold" id="buyBtn">Start transaction</button>
+        </form>
+      {% elif user.is_farmer %}
+        <div class="alert alert-info mt-3">Farmers cannot purchase listings.</div>
+      {% elif not user.is_authenticated %}
+        <a href="/login/" class="btn btn-gold mt-3">Sign in to buy</a>
+      {% endif %}
+    </div>
   </div>
 </section>
+{% endblock %}
+{% block scripts %}
+<script>
+// Prevent duplicate submits; give clear "working" feedback.
+(function(){var f=document.getElementById('buyForm'),b=document.getElementById('buyBtn');
+ if(f&&b)f.addEventListener('submit',function(){b.classList.add('is-loading');b.disabled=true;});})();
+</script>
 {% endblock %}

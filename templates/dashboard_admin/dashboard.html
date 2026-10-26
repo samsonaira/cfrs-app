@@ -2,59 +2,82 @@
 {% block title %}Administrator — CFRS{% endblock %}
 {% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>{% endblock %}
 {% block content %}
-<section class="section wrap">
-  <div class="row between">
-    <div><h2>Platform overview</h2><p class="muted mt-1">Live figures from the database.</p></div>
-    <a href="/ml-analytics/" class="btn btn-gold">ML analytics</a>
-  </div>
-  <div class="stats mt-3">
-    <div class="stat"><div class="n">{{ stats.farmers }}</div><div class="l">Farmers</div></div>
-    <div class="stat"><div class="n">{{ stats.buyers }}</div><div class="l">Buyers</div></div>
-    <div class="stat"><div class="n">{{ stats.active_listings }}</div><div class="l">Active listings</div></div>
-    <div class="stat"><div class="n">{{ stats.total_tx }}</div><div class="l">Transactions</div></div>
-    <div class="stat"><div class="n">{{ stats.pending_tx }}</div><div class="l">Pending</div></div>
-    <div class="stat"><div class="n">{{ stats.completed_tx }}</div><div class="l">Completed</div></div>
-    <div class="stat"><div class="n">{{ stats.cancelled_tx }}</div><div class="l">Cancelled</div></div>
-    <div class="stat"><div class="n">{{ stats.rec_requests }}</div><div class="l">Buyers served recs</div></div>
-  </div>
-  <div class="grid mt-4" style="grid-template-columns:1fr 1fr">
-    <div class="card card-p"><h3>Listings by produce</h3><canvas id="c1" height="200"></canvas></div>
-    <div class="card card-p"><h3>Listings by location</h3><canvas id="c2" height="200"></canvas></div>
-  </div>
+<div class="shell">
+  <aside class="sidebar" id="dashSidebar">
+    <div class="s-label">Administrator</div>
+    <a href="/admin-dashboard/" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</a>
+    <a href="/ml-analytics/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>ML analytics</a>
+    <a href="/marketplace/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9h18l-1 11H4L3 9zM8 9V6a4 4 0 0 1 8 0v3"/></svg>Marketplace</a>
+    <div class="s-label mt-3">Account</div>
+    <form method="post" action="/logout/" class="logout">{% csrf_token %}<button type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button></form>
+  </aside>
 
-  <h3 class="mt-4">Transactions flagged for review
-    <span class="badge badge-warn">{{ flagged|length }}</span></h3>
-  <p class="muted mt-1" style="font-size:.9rem">Flagged by the Isolation Forest model as
-    statistical anomalies. This is a prompt to review — not an accusation.</p>
-  <div class="card mt-2" style="overflow:hidden">
-    <table class="table">
-      <thead><tr><th>Tx</th><th>Buyer</th><th>Farmer</th><th>Produce</th><th>Qty</th><th>Amount</th><th>Anomaly score</th></tr></thead>
-      <tbody>
-      {% for f in flagged %}
-        <tr><td>#{{ f.id }}</td><td>{{ f.buyer }}</td><td>{{ f.farmer }}</td>
-          <td>{{ f.produce }}</td><td>{{ f.quantity }}</td><td>KSh {{ f.amount }}</td>
-          <td><span class="badge badge-danger">{{ f.score }}</span></td></tr>
-      {% empty %}
-        <tr><td colspan="7" class="muted center" style="padding:24px">No transactions flagged for review.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+  <div class="shell-main">
+    <div class="page-head">
+      <div><h2 class="mb-0">Platform overview</h2><p class="muted mt-1 mb-0">Live figures from the database.</p></div>
+      <div class="row gap-sm">
+        <button class="btn btn-ghost btn-sm dash-menu" id="dashMenu" aria-label="Sections">☰ Sections</button>
+        <a href="/ml-analytics/" class="btn btn-gold">ML analytics</a>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat card-hover"><div class="n">{{ stats.farmers }}</div><div class="l">Farmers</div></div>
+      <div class="stat card-hover"><div class="n">{{ stats.buyers }}</div><div class="l">Buyers</div></div>
+      <div class="stat card-hover"><div class="n">{{ stats.active_listings }}</div><div class="l">Active listings</div></div>
+      <div class="stat card-hover"><div class="n">{{ stats.total_tx }}</div><div class="l">Transactions</div></div>
+      <div class="stat card-hover"><div class="n">{{ stats.pending_tx }}</div><div class="l">Pending</div></div>
+      <div class="stat card-hover"><div class="n">{{ stats.completed_tx }}</div><div class="l">Completed</div></div>
+      <div class="stat card-hover"><div class="n">{{ stats.cancelled_tx }}</div><div class="l">Cancelled</div></div>
+      <div class="stat card-hover"><div class="n">{{ stats.rec_requests }}</div><div class="l">Buyers served recs</div></div>
+    </div>
+
+    <div class="grid mt-4" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+      <div class="card card-p"><h4>Listings by produce</h4><canvas id="c1" height="200" class="mt-2"></canvas></div>
+      <div class="card card-p"><h4>Listings by location</h4><canvas id="c2" height="200" class="mt-2"></canvas></div>
+    </div>
+
+    <h3 class="mt-4">Transactions flagged for review <span class="badge badge-warn">{{ flagged|length }}</span></h3>
+    <p class="muted mt-1" style="font-size:.9rem">Flagged by the Isolation Forest model as statistical
+      anomalies — a prompt to review, not an accusation.</p>
+    <div class="card mt-2 table-wrap">
+      <table class="table">
+        <thead><tr><th>Tx</th><th>Buyer</th><th>Farmer</th><th>Produce</th><th>Qty</th><th>Amount</th><th>Anomaly</th></tr></thead>
+        <tbody>
+        {% for f in flagged %}
+          <tr><td>#{{ f.id }}</td><td>{{ f.buyer }}</td><td>{{ f.farmer }}</td>
+            <td>{{ f.produce }}</td><td>{{ f.quantity }}</td><td><strong>KSh {{ f.amount }}</strong></td>
+            <td><span class="badge badge-danger">{{ f.score }}</span></td></tr>
+        {% empty %}
+          <tr><td colspan="7">
+            <div class="empty" style="padding:28px 10px">
+              <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+              <h3>Nothing flagged</h3><p class="muted">No transactions currently look anomalous.</p>
+            </div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-</section>
+</div>
 {% endblock %}
 {% block scripts %}
+{# chart data via json_script so user-entered produce/location names can never
+   break out of the script block (escapes the values safely) #}
 {{ produce_labels|json_script:"produce-labels" }}
 {{ produce_values|json_script:"produce-values" }}
 {{ location_labels|json_script:"location-labels" }}
 {{ location_values|json_script:"location-values" }}
 <script>
-const g='#2d8a55';
+(function(){var m=document.getElementById('dashMenu'),s=document.getElementById('dashSidebar');
+ if(m&&s)m.addEventListener('click',function(){s.classList.toggle('open');});})();
 const chartData = id => JSON.parse(document.getElementById(id).textContent);
+const gridC='rgba(15,46,30,.08)';
+const baseOpts={responsive:true,plugins:{legend:{display:false}},
+  scales:{x:{grid:{display:false},ticks:{color:'#64705f'}},y:{grid:{color:gridC},ticks:{color:'#64705f'},beginAtZero:true}}};
 new Chart(document.getElementById('c1'),{type:'bar',
-  data:{labels:chartData('produce-labels'),datasets:[{data:chartData('produce-values'),backgroundColor:g}]},
-  options:{plugins:{legend:{display:false}}}});
+  data:{labels:chartData('produce-labels'),datasets:[{data:chartData('produce-values'),backgroundColor:'#2a854e',borderRadius:6}]},options:baseOpts});
 new Chart(document.getElementById('c2'),{type:'bar',
-  data:{labels:chartData('location-labels'),datasets:[{data:chartData('location-values'),backgroundColor:'#e0a52e'}]},
-  options:{plugins:{legend:{display:false}}}});
+  data:{labels:chartData('location-labels'),datasets:[{data:chartData('location-values'),backgroundColor:'#e0a52e',borderRadius:6}]},options:baseOpts});
 </script>
 {% endblock %}

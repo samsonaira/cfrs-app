@@ -4,22 +4,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f2e1e">
 <title>{% block title %}CFRS — Farmer & Buyer Marketplace{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;750;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/cfrs.css' %}">
 {% block head %}{% endblock %}
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <nav class="nav">
   <div class="wrap">
     <a class="brand" href="/"><span class="mark">C</span> CFRS</a>
-    <div class="links">
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navlinks" id="navToggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div class="links" id="navlinks">
       <a href="/marketplace/">Marketplace</a>
       {% if user.is_authenticated %}
-        <a href="/dashboard/">Dashboard</a>
-        <form method="post" action="/logout/" class="hide-m">{% csrf_token %}
-          <button type="submit" class="linkbtn">Sign out</button></form>
+        {% if user.is_farmer %}
+          <a href="/dashboard/">Dashboard</a>
+          <a href="/listings/new/">New listing</a>
+        {% elif user.is_buyer %}
+          <a href="/dashboard/">Recommendations</a>
+        {% elif user.is_administrator %}
+          <a href="/admin-dashboard/">Dashboard</a>
+          <a href="/ml-analytics/">ML analytics</a>
+        {% else %}
+          <a href="/dashboard/">Dashboard</a>
+        {% endif %}
+        <span class="nav-user">{{ user.first_name|default:user.username }}</span>
+        <form method="post" action="/logout/" class="logout">{% csrf_token %}<button type="submit">Sign out</button></form>
       {% else %}
         <a href="/login/">Sign in</a>
         <a href="/register/" class="btn btn-gold btn-sm">Get started</a>
@@ -29,14 +45,16 @@
 </nav>
 
 {% if messages %}
-<div class="wrap mt-2">
+<div class="wrap mt-2" role="status" aria-live="polite">
   {% for m in messages %}
-    <div class="alert {% if m.tags == 'error' %}alert-err{% else %}alert-ok{% endif %}">{{ m }}</div>
+    <div class="alert {% if m.tags == 'error' %}alert-err{% elif m.tags == 'info' %}alert-info{% else %}alert-ok{% endif %}">{{ m }}</div>
   {% endfor %}
 </div>
 {% endif %}
 
+<main id="main">
 {% block content %}{% endblock %}
+</main>
 
 <footer class="site">
   <div class="wrap row between">
@@ -45,6 +63,26 @@
     <div><a href="/marketplace/">Marketplace</a> · <a href="/login/">Sign in</a></div>
   </div>
 </footer>
+
+<script>
+(function () {
+  // Mobile nav toggle
+  var t = document.getElementById('navToggle'), l = document.getElementById('navlinks');
+  if (t && l) t.addEventListener('click', function () {
+    var open = l.classList.toggle('open');
+    t.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  // Highlight the current section in the nav
+  try {
+    var path = location.pathname;
+    document.querySelectorAll('#navlinks a').forEach(function (a) {
+      var href = a.getAttribute('href');
+      if (!href || href === '/') return;
+      if (path === href || path.indexOf(href) === 0) a.classList.add('active');
+    });
+  } catch (e) {}
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

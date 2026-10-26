@@ -1,0 +1,13 @@
+{% load static %}{% comment %}
+Reusable produce image. Prefers a real photo at static/img/produce/<name>.jpg,
+falls back to the <name>.svg illustration, then to default.svg — so dropping a
+real photo in that folder upgrades every card automatically, and nothing breaks
+before you do. Params: name (produce_name), alt (optional), cls (optional css).
+{% endcomment %}<img
+  src="{% static 'img/produce/' %}{{ name|lower|cut:' ' }}.jpg"
+  alt="{{ alt|default:name }}"
+  loading="lazy"
+  class="{{ cls }}"
+  data-svg="{% static 'img/produce/' %}{{ name|lower|cut:' ' }}.svg"
+  data-default="{% static 'img/produce/default.svg' %}"
+  onerror="if(!this.dataset.s){this.dataset.s=1;this.src=this.dataset.svg;}else if(!this.dataset.d){this.dataset.d=1;this.src=this.dataset.default;}else{this.onerror=null;}">
