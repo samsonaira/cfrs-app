@@ -23,4 +23,5 @@ urlpatterns = [
     path("admin-dashboard/", mv.admin_dashboard, name="admin_dashboard"),
     path("ml-analytics/", mv.ml_analytics, name="ml_analytics"),
     path("api/", include("recommendations.urls")),
+    path("accounts/", include("allauth.urls")),
 ]

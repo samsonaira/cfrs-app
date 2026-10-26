@@ -1,17 +1,40 @@
 {% extends "base.html" %}
 {% block title %}Sign in — CFRS{% endblock %}
 {% block content %}
-<section class="section wrap" style="max-width:440px">
-  <h2>Welcome back</h2>
-  <p class="muted mt-1">Sign in to reach your dashboard.</p>
-  <form method="post" class="card card-p mt-3">
+<div class="auth-wrap">
+  <span class="eyebrow">Welcome back</span>
+  <h2 class="mt-1">Sign in to CFRS</h2>
+  <p class="muted mt-1">Reach your dashboard and recommendations.</p>
+
+  <form method="post" class="auth-card mt-3" id="loginForm">
     {% csrf_token %}
-    <div class="field"><label>Email</label>
-      <input type="email" name="email" required autofocus placeholder="you@example.com"></div>
-    <div class="field"><label>Password</label>
-      <input type="password" name="password" required placeholder="Your password"></div>
-    <button class="btn btn-green" style="width:100%">Sign in</button>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" name="email" required autofocus autocomplete="email" placeholder="you@example.com">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Your password">
+    </div>
+    <button class="btn btn-green btn-block" id="loginBtn">Sign in</button>
+
+    <div class="divider">or continue with</div>
+    <div class="social-row">
+      <a href="{% url 'social_start' 'google' %}" class="btn btn-ghost">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.8 6.1C12.2 13.3 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.5 3-2.2 5.5-4.7 7.2l7.3 5.7c4.3-4 6.9-9.9 6.9-17.4z"/><path fill="#FBBC05" d="M10.3 28.5c-.5-1.5-.8-3.1-.8-4.5s.3-3 .8-4.5l-7.8-6.1C.9 16.3 0 20 0 24s.9 7.7 2.5 10.6l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.3-5.7c-2 1.4-4.7 2.3-7.9 2.3-6.4 0-11.8-3.8-13.7-9.9l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
+        Google</a>
+      <a href="{% url 'social_start' 'github' %}" class="btn btn-ghost">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="#1c2b22" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub</a>
+    </div>
   </form>
-  <p class="muted mt-2 center">New here? <a href="/register/">Create an account</a></p>
-</section>
+
+  <p class="muted mt-3 center">New here? <a href="/register/">Create an account</a></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){var f=document.getElementById('loginForm'),b=document.getElementById('loginBtn');
+ if(f&&b)f.addEventListener('submit',function(){b.classList.add('is-loading');b.disabled=true;});})();
+</script>
 {% endblock %}

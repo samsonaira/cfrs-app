@@ -93,14 +93,14 @@ class ColdStartProfileFallbackTests(TestCase):
     def setUp(self):
         from users.models import Account, BuyerProfile
         from marketplace.models import ProduceListing
-        farmer = Account.objects.create_user(
+        farmer = Account.objects.create_user(email_verified=True, 
             username="csf@t.ke", email="csf@t.ke", password="x", role="FARMER")
         for produce, location in [("Tea", "Mombasa"), ("Maize", "Kiambu"),
                                   ("Maize", "Nakuru"), ("Rice", "Kiambu")]:
             ProduceListing.objects.create(
                 farmer=farmer, produce_name=produce, quantity=100,
                 asking_price=50, location=location, status="ACTIVE")
-        self.buyer = Account.objects.create_user(
+        self.buyer = Account.objects.create_user(email_verified=True, 
             username="csb@t.ke", email="csb@t.ke", password="x", role="BUYER")
         self.profile = BuyerProfile.objects.create(
             account=self.buyer, preferred_produce="maize, Beans",
@@ -142,18 +142,18 @@ class RecommendationWriteSafetyTests(TestCase):
     def setUp(self):
         from users.models import Account, BuyerProfile
         from marketplace.models import ProduceListing
-        farmer = Account.objects.create_user(
+        farmer = Account.objects.create_user(email_verified=True, 
             username="ws_f@t.ke", email="ws_f@t.ke", password="x", role="FARMER")
         for produce, location in [("Tea", "Mombasa"), ("Maize", "Kiambu"),
                                   ("Maize", "Nakuru"), ("Rice", "Kiambu")]:
             ProduceListing.objects.create(
                 farmer=farmer, produce_name=produce, quantity=100,
                 asking_price=50, location=location, status="ACTIVE")
-        self.buyer = Account.objects.create_user(
+        self.buyer = Account.objects.create_user(email_verified=True, 
             username="ws_b@t.ke", email="ws_b@t.ke", password="x", role="BUYER")
         BuyerProfile.objects.create(
             account=self.buyer, preferred_produce="maize", preferred_location="kiambu")
-        self.admin = Account.objects.create_user(
+        self.admin = Account.objects.create_user(email_verified=True, 
             username="ws_a@t.ke", email="ws_a@t.ke", password="x", role="ADMINISTRATOR")
 
     def _count(self):
@@ -202,7 +202,7 @@ class RealActivityInfluencesRecsTests(TestCase):
     def setUp(self):
         from users.models import Account
         from marketplace.models import ProduceListing
-        self.farmer = Account.objects.create_user(
+        self.farmer = Account.objects.create_user(email_verified=True, 
             username="ra_f@t.ke", email="ra_f@t.ke", password="x", role="FARMER")
         self.maize = ProduceListing.objects.create(
             farmer=self.farmer, produce_name="Maize", quantity=100,
@@ -211,7 +211,7 @@ class RealActivityInfluencesRecsTests(TestCase):
             farmer=self.farmer, produce_name="Tea", quantity=100,
             asking_price=400, location="Mombasa", status="ACTIVE")
         # A real platform buyer (email username, not in the synthetic model)
-        self.buyer = Account.objects.create_user(
+        self.buyer = Account.objects.create_user(email_verified=True, 
             username="ra_b@t.ke", email="ra_b@t.ke", password="x", role="BUYER")
 
     def _complete_a_maize_purchase(self):
@@ -244,6 +244,6 @@ class RealActivityInfluencesRecsTests(TestCase):
         from users.models import Account
         from recommendations.services import _db_transaction_preferences
         self._complete_a_maize_purchase()
-        other = Account.objects.create_user(
+        other = Account.objects.create_user(email_verified=True, 
             username="ra_b2@t.ke", email="ra_b2@t.ke", password="x", role="BUYER")
         self.assertIsNone(_db_transaction_preferences(other))  # keyed by account

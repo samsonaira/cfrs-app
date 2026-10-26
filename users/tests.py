@@ -45,7 +45,7 @@ class AuthTests(TestCase):
 
     def test_sign_out_control_is_a_post_form(self):
         user = Account.objects.create_user(username="s@t.ke", email="s@t.ke",
-            password="Str0ngPass!23", role="BUYER")
+            password="Str0ngPass!23", role="BUYER", email_verified=True)
         c = Client(); c.force_login(user)
         html = c.get(reverse("dashboard")).content.decode()
         self.assertIn('<form method="post" action="/logout/"', html)
@@ -250,3 +250,73 @@ class EmailVerificationTests(TestCase):
                           {"email": "admin@t.ke", "password": "Str0ngPass!23"})
         self.assertEqual(resp.status_code, 302)
         self.assertIn("_auth_user_id", self.c.session)
+
+
+class SocialAuthTests(TestCase):
+    """Google/GitHub social login: the verified-email policy and wiring."""
+
+    def _sociallogin(self, email, verified, role_session="BUYER"):
+        from allauth.socialaccount.models import SocialLogin, SocialAccount
+        from allauth.account.models import EmailAddress
+        user = Account(email=email, username=email, first_name="Soc")
+        account = SocialAccount(provider="google", uid="uid-" + email,
+                                extra_data={"email": email, "email_verified": verified})
+        ea = EmailAddress(email=email, verified=verified, primary=True)
+        return SocialLogin(user=user, account=account, email_addresses=[ea])
+
+    def _request(self, role="BUYER"):
+        from django.test import RequestFactory
+        from importlib import import_module
+        from django.conf import settings
+        req = RequestFactory().get("/accounts/google/login/callback/")
+        engine = import_module(settings.SESSION_ENGINE)
+        req.session = engine.SessionStore()
+        req.session["social_signup_role"] = role
+        return req
+
+    def test_provider_verified_flag(self):
+        from users.adapters import provider_email_is_verified
+        self.assertTrue(provider_email_is_verified(self._sociallogin("v@x.ke", True)))
+        self.assertFalse(provider_email_is_verified(self._sociallogin("u@x.ke", False)))
+
+    def test_social_signup_verified_creates_active_verified_account(self):
+        from users.adapters import CFRSSocialAccountAdapter
+        req = self._request("FARMER")
+        sl = self._sociallogin("gfarm@x.ke", verified=True)
+        adapter = CFRSSocialAccountAdapter()
+        adapter.populate_user(req, sl, {"email": "gfarm@x.ke"})
+        user = adapter.save_user(req, sl)
+        user.refresh_from_db()
+        self.assertTrue(user.email_verified)
+        self.assertTrue(user.is_active)
+        self.assertEqual(user.role, "FARMER")
+        self.assertTrue(FarmerProfile.objects.filter(account=user).exists())
+        self.assertEqual(len(mail.outbox), 0)  # verified: no OTP sent
+
+    def test_social_signup_unverified_requires_otp(self):
+        from users.adapters import CFRSSocialAccountAdapter
+        req = self._request("BUYER")
+        sl = self._sociallogin("gunv@x.ke", verified=False)
+        adapter = CFRSSocialAccountAdapter()
+        adapter.populate_user(req, sl, {"email": "gunv@x.ke"})
+        user = adapter.save_user(req, sl)
+        user.refresh_from_db()
+        self.assertFalse(user.email_verified)       # untrusted email: not verified
+        self.assertEqual(len(mail.outbox), 1)       # OTP sent instead
+        self.assertTrue(BuyerProfile.objects.filter(account=user).exists())
+
+    def test_social_start_sets_role_and_redirects(self):
+        c = Client()
+        resp = c.get(reverse("social_start", args=["github"]) + "?role=FARMER")
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, "/accounts/github/login/")
+        self.assertEqual(c.session.get("social_signup_role"), "FARMER")
+
+    def test_social_buttons_render(self):
+        c = Client()
+        for path in ("/login/", "/register/"):
+            html = c.get(path).content.decode()
+            self.assertIn("/social/google/start/", html)
+            self.assertIn("/social/github/start/", html)
+
+

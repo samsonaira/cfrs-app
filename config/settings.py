@@ -64,10 +64,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django.contrib.sites',          # required by allauth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.github',
     'users',
     'marketplace',
     'recommendations',
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -77,6 +85,13 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',          # allauth
+    'users.middleware.EmailVerifiedRequiredMiddleware',      # enforce verified email
+]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -191,3 +206,35 @@ else:
 # OTP verification tuning (overridable per environment / in tests)
 OTP_RESEND_COOLDOWN_SECONDS = int(os.environ.get("OTP_RESEND_COOLDOWN_SECONDS", "60"))
 OTP_MAX_CODES_PER_HOUR = int(os.environ.get("OTP_MAX_CODES_PER_HOUR", "5"))
+
+
+# --- Social authentication (Google & GitHub) via django-allauth ---
+# Email/password signups use CFRS's own OTP. A social login is trusted as
+# verified ONLY when the provider reports the email as verified (enforced in
+# users/adapters.py); otherwise the same OTP step applies.
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = "none"        # email/password uses our own OTP
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"  # handled by the custom adapter
+SOCIALACCOUNT_LOGIN_ON_GET = True          # go straight to the provider
+SOCIALACCOUNT_ADAPTER = "users.adapters.CFRSSocialAccountAdapter"
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APPS": [{
+            "client_id": os.environ.get("GOOGLE_CLIENT_ID", ""),
+            "secret": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+            "key": "",
+        }],
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    },
+    "github": {
+        "APPS": [{
+            "client_id": os.environ.get("GITHUB_CLIENT_ID", ""),
+            "secret": os.environ.get("GITHUB_CLIENT_SECRET", ""),
+            "key": "",
+        }],
+        "SCOPE": ["user:email"],
+    },
+}

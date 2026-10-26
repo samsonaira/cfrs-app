@@ -12,7 +12,7 @@ from marketplace.services.transaction_service import (
 
 class ListingModelTests(TestCase):
     def setUp(self):
-        self.farmer = Account.objects.create_user(
+        self.farmer = Account.objects.create_user(email_verified=True, 
             username="f@t.ke", email="f@t.ke", password="x", role="FARMER")
 
     def test_valid_listing(self):
@@ -35,7 +35,7 @@ class ListingModelTests(TestCase):
 
 class CreateListingViewTests(TestCase):
     def setUp(self):
-        self.farmer = Account.objects.create_user(
+        self.farmer = Account.objects.create_user(email_verified=True, 
             username="lf@t.ke", email="lf@t.ke", password="x", role="FARMER")
         self.c = Client(); self.c.force_login(self.farmer)
 
@@ -62,9 +62,9 @@ class CreateListingViewTests(TestCase):
 
 class TransactionServiceTests(TestCase):
     def setUp(self):
-        self.farmer = Account.objects.create_user(
+        self.farmer = Account.objects.create_user(email_verified=True, 
             username="f2@t.ke", email="f2@t.ke", password="x", role="FARMER")
-        self.buyer = Account.objects.create_user(
+        self.buyer = Account.objects.create_user(email_verified=True, 
             username="b2@t.ke", email="b2@t.ke", password="x", role="BUYER")
         self.listing = ProduceListing.objects.create(
             farmer=self.farmer, produce_name="Rice", quantity=100,
@@ -113,7 +113,7 @@ class TransactionServiceTests(TestCase):
         self.assertEqual(tx.status, "COMPLETED")
 
     def test_wrong_farmer_cannot_confirm(self):
-        other = Account.objects.create_user(
+        other = Account.objects.create_user(email_verified=True, 
             username="f3@t.ke", email="f3@t.ke", password="x", role="FARMER")
         tx = create_transaction(self.buyer, self.listing.pk, 10)
         with self.assertRaises(PermissionDenied):
@@ -139,9 +139,9 @@ class TransactionServiceTests(TestCase):
 
 class AuthorizationTests(TestCase):
     def setUp(self):
-        self.farmer = Account.objects.create_user(
+        self.farmer = Account.objects.create_user(email_verified=True, 
             username="af@t.ke", email="af@t.ke", password="x", role="FARMER")
-        self.buyer = Account.objects.create_user(
+        self.buyer = Account.objects.create_user(email_verified=True, 
             username="ab@t.ke", email="ab@t.ke", password="x", role="BUYER")
 
     def test_farmer_cannot_get_recommendations(self):
@@ -169,11 +169,11 @@ class AdminDashboardEscapingTests(TestCase):
     def test_listing_name_cannot_break_out_of_script_block(self):
         payload = "</script><script>alert(2)</script>"
         ProduceListing.objects.create(
-            farmer=Account.objects.create_user(
+            farmer=Account.objects.create_user(email_verified=True, 
                 username="xf@t.ke", email="xf@t.ke", password="x", role="FARMER"),
             produce_name=payload, quantity=7, asking_price=9,
             location=payload, status="ACTIVE")
-        admin = Account.objects.create_user(
+        admin = Account.objects.create_user(email_verified=True, 
             username="ad@t.ke", email="ad@t.ke", password="x",
             role="ADMINISTRATOR")
         c = Client(); c.force_login(admin)
@@ -188,9 +188,9 @@ class AdminDashboardEscapingTests(TestCase):
 
 class DjangoAdminTests(TestCase):
     def test_models_are_manageable_in_django_admin(self):
-        farmer = Account.objects.create_user(
+        farmer = Account.objects.create_user(email_verified=True, 
             username="daf@t.ke", email="daf@t.ke", password="x", role="FARMER")
-        buyer = Account.objects.create_user(
+        buyer = Account.objects.create_user(email_verified=True, 
             username="dab@t.ke", email="dab@t.ke", password="x", role="BUYER")
         listing = ProduceListing.objects.create(
             farmer=farmer, produce_name="Rice", quantity=100,
@@ -289,15 +289,15 @@ class AdminDashboardResilienceTests(TestCase):
     def test_dashboard_200_when_fraud_model_untrained(self):
         from unittest.mock import patch
         from django.urls import reverse
-        farmer = Account.objects.create_user(
+        farmer = Account.objects.create_user(email_verified=True, 
             username="f9@t.ke", email="f9@t.ke", password="x", role="FARMER")
-        buyer = Account.objects.create_user(
+        buyer = Account.objects.create_user(email_verified=True, 
             username="b9@t.ke", email="b9@t.ke", password="x", role="BUYER")
         listing = ProduceListing.objects.create(
             farmer=farmer, produce_name="Maize", quantity=100,
             asking_price=45, location="Kiambu", status="ACTIVE")
         create_transaction(buyer, listing.pk, 5)
-        admin = Account.objects.create_user(
+        admin = Account.objects.create_user(email_verified=True, 
             username="a9@t.ke", email="a9@t.ke", password="x", role="ADMINISTRATOR")
         c = Client(); c.force_login(admin)
         with patch("ml.recommendation.fraud_detection.score_transaction",
@@ -312,9 +312,9 @@ class RequestMessageRoundingTests(TestCase):
     def test_total_rounded_to_two_dp(self):
         import re
         from django.urls import reverse
-        farmer = Account.objects.create_user(
+        farmer = Account.objects.create_user(email_verified=True, 
             username="f10@t.ke", email="f10@t.ke", password="x", role="FARMER")
-        buyer = Account.objects.create_user(
+        buyer = Account.objects.create_user(email_verified=True, 
             username="b10@t.ke", email="b10@t.ke", password="x", role="BUYER")
         listing = ProduceListing.objects.create(
             farmer=farmer, produce_name="Maize", quantity=Decimal("100"),
@@ -331,11 +331,11 @@ class PendingReservationTests(TestCase):
     """Item 5: outstanding pending requests reserve stock at request time."""
 
     def setUp(self):
-        farmer = Account.objects.create_user(
+        farmer = Account.objects.create_user(email_verified=True, 
             username="pr_f@t.ke", email="pr_f@t.ke", password="x", role="FARMER")
-        self.b1 = Account.objects.create_user(
+        self.b1 = Account.objects.create_user(email_verified=True, 
             username="pr_b1@t.ke", email="pr_b1@t.ke", password="x", role="BUYER")
-        self.b2 = Account.objects.create_user(
+        self.b2 = Account.objects.create_user(email_verified=True, 
             username="pr_b2@t.ke", email="pr_b2@t.ke", password="x", role="BUYER")
         self.listing = ProduceListing.objects.create(
             farmer=farmer, produce_name="Maize", quantity=Decimal("100"),
@@ -369,7 +369,7 @@ class ProduceScopeTests(TestCase):
 
     def test_create_listing_dropdown_includes_marketplace_crops(self):
         from django.urls import reverse
-        farmer = Account.objects.create_user(
+        farmer = Account.objects.create_user(email_verified=True, 
             username="ps_f@t.ke", email="ps_f@t.ke", password="x", role="FARMER")
         c = Client(); c.force_login(farmer)
         html = c.get(reverse("create_listing")).content.decode()
