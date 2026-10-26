@@ -12,3 +12,7 @@ requests>=2.31
 requests-oauthlib>=2.0
 PyJWT>=2.0
 cryptography>=42.0
+gunicorn>=21.2
+whitenoise>=6.6
+dj-database-url>=2.1
+psycopg2-binary>=2.9

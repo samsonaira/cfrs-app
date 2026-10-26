@@ -1,0 +1,44 @@
+# Render blueprint for CFRS. Create > Blueprint > point at this repo.
+services:
+  - type: web
+    name: cfrs
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false        # e.g. cfrs.onrender.com,yourdomain.me
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        sync: false        # e.g. https://cfrs.onrender.com,https://yourdomain.me
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cfrs-db
+          property: connectionString
+      - key: CFRS_ADMIN_PASSWORD
+        sync: false        # stable admin password for the seeded superuser
+      # Email (SMTP) — set these to send real OTP emails; otherwise console mode
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      # OAuth (optional) — set to enable Google / GitHub login in production
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+databases:
+  - name: cfrs-db
+    plan: free
